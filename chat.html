@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Private Chat</title>
+  <style>
+    :root{
+      --bg:#0f172a;
+      --card:#1e293b;
+      --mine:#2563eb;
+      --other:#1e293b;
+      --text:#ffffff;
+      --muted:#94a3b8;
+      --border:#334155;
+      --danger:#ef4444;
+      --warn:#f59e0b;
+      --ok:#10b981;
+    }
+
+    *{ box-sizing:border-box; }
+
+    body{
+      font-family:tahoma,sans-serif;
+      background:var(--bg);
+      color:var(--text);
+      margin:0;
+      display:flex;
+      flex-direction:column;
+      height:100vh;
+    }
+
+    header{
+      background:var(--card);
+      padding:14px 16px;
+      text-align:center;
+      font-size:18px;
+      border-bottom:1px solid var(--border);
+    }
+
+    #statusBar{
+      padding:10px 14px;
+      font-size:14px;
+      text-align:center;
+      border-bottom:1px solid var(--border);
+      background:#111827;
+      color:var(--muted);
+    }
+
+    #messages{
+      flex:1;
+      overflow:auto;
+      padding:15px;
+      display:flex;
+      flex-direction:column;
+      gap:10px;
+    }
+
+    .msg{
+      max-width:78%;
+      padding:10px 12px;
+      border-radius:12px;
+      background:var(--other);
+      align-self:flex-start;
+      word-break:break-word;
+    }
+
+    .msg.mine{
+      background:var(--mine);
+      align-self:flex-end;
+    }
+
+    .msg .meta{
+      font-size:11px;
+      opacity:.8;
+      margin-top:6px;
+    }
+
+    footer{
+      display:flex;
+      gap:10px;
+      padding:10px;
+      background:var(--card);
+      border-top:1px solid var(--border);
+    }
+
+    input{
+      flex:1;
+      padding:12px;
+      border-radius:8px;
+      border:none;
+      outline:none;
+      font-size:15px;
+    }
+
+    button{
+      padding:12px 16px;
+      border:none;
+      background:#2563eb;
+      color:white;
+      border-radius:8px;
+      cursor:pointer;
+      font-size:15px;
+    }
+
+    #blockedView{
+      display:none;
+      flex:1;
+      align-items:center;
+      justify-content:center;
+      padding:24px;
+    }
+
+    .blocked-box{
+      width:min(560px,100%);
+      background:var(--card);
+      border:1px solid var(--border);
+      border-radius:16px;
+      padding:24px;
+      text-align:center;
+    }
+
+    .blocked-box h2{
+      margin-top:0;
+    }
+
+    .blocked-box p{
+      color:var(--muted);
+      line-height:1.8;
+    }
+
+    .danger{
+      color:#fca5a5;
+    }
+
+    .hidden{
+      display:none !important;
+    }
+  </style>
+</head>
+<body>
+
+  <header>💬 الشات الخاص</header>
+  <div id="statusBar">جاري التحقق من الجهاز...</div>
+
+  <div id="messages"></div>
+
+  <footer id="chatFooter">
+    <input id="text" placeholder="اكتب رسالة..." />
+    <button id="send">إرسال</button>
+  </footer>
+
+  <div id="blockedView">
+    <div class="blocked-box">
+      <h2>هذا الجهاز غير مسموح</h2>
+      <p class="danger">
+        لا يمكن فتح الشات من هذا الجهاز حاليًا.
+      </p>
+      <p>
+        افتح <b>modern.html</b> أولًا لإرسال طلب انضمام، ثم انتظر موافقة الأدمن.
+      </p>
+    </div>
+  </div>
+
+<script type="module">
+  import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+
+  const supabase = createClient(
+    'https://vbwtsnxrshgjqmbgtagw.supabase.co',
+    'sb_publishable_esJOtB6hRNf48Uo61txcyg_9F3yolJO'
+  )
+
+  let currentUser = null
+  let currentDeviceId = null
+  let allowedDevice = null
+
+  const messagesBox = document.getElementById('messages')
+  const input = document.getElementById('text')
+  const sendBtn = document.getElementById('send')
+  const chatFooter = document.getElementById('chatFooter')
+  const blockedView = document.getElementById('blockedView')
+  const statusBar = document.getElementById('statusBar')
+
+  function setStatus(text) {
+    statusBar.textContent = text
+  }
+
+  function formatTime(iso) {
+    const d = new Date(iso)
+    return d.toLocaleTimeString('ar', { hour: '2-digit', minute: '2-digit' })
+  }
+
+  function scrollToBottom() {
+    messagesBox.scrollTop = messagesBox.scrollHeight
+  }
+
+  function getStoredDeviceId() {
+    return localStorage.getItem('device_id')
+  }
+
+  function saveDeviceId(deviceId) {
+    localStorage.setItem('device_id', deviceId)
+  }
+
+  function createNewDeviceId() {
+    return crypto.randomUUID()
+  }
+
+  async function ensureAnonymousLogin() {
+    const { data: sessionData, error: sessionError } = await supabase.auth.getSession()
+    if (sessionError) throw sessionError
+
+    if (sessionData.session?.user) {
+      return sessionData.session.user
+    }
+
+    const { data, error } = await supabase.auth.signInAnonymously()
+    if (error) throw error
+
+    return data.user
+  }
+
+async function findAllowedByDeviceId(deviceId) {
+  const { data, error } = await supabase.rpc('get_current_allowed_device', {
+    p_device_id: deviceId
+  })
+
+  if (error) throw error
+
+  if (Array.isArray(data)) {
+    return data[0] || null
+  }
+
+  return data || null
+}
+  async function resolveDeviceId(user) {
+    let stored = getStoredDeviceId()
+
+    if (stored) {
+      return stored
+    }
+
+    // fallback ذكي للأجهزة التي تمت الموافقة عليها قبل نظام localStorage device_id
+    const fallbackAllowed = await findAllowedByDeviceId(user.id)
+    if (fallbackAllowed) {
+      saveDeviceId(user.id)
+      return user.id
+    }
+
+    const newDeviceId = createNewDeviceId()
+    saveDeviceId(newDeviceId)
+    return newDeviceId
+  }
+
+  function renderMessage(msg) {
+    const div = document.createElement('div')
+    div.className = 'msg'
+
+    if (msg.user_id === currentUser.id) {
+      div.classList.add('mine')
+    }
+
+    div.innerHTML = `
+      <div>${escapeHtml(msg.content)}</div>
+      <div class="meta">${formatTime(msg.created_at)}</div>
+    `
+
+    messagesBox.appendChild(div)
+  }
+
+  function escapeHtml(str) {
+    return str
+      .replaceAll('&', '&amp;')
+      .replaceAll('<', '&lt;')
+      .replaceAll('>', '&gt;')
+      .replaceAll('"', '&quot;')
+      .replaceAll("'", '&#039;')
+  }
+
+  async function loadMessages() {
+    const { data, error } = await supabase
+      .from('chat_messages')
+      .select('*')
+      .order('created_at', { ascending: true })
+
+    if (error) throw error
+
+    messagesBox.innerHTML = ''
+    data.forEach(renderMessage)
+    scrollToBottom()
+  }
+
+  async function sendMessage() {
+    const text = input.value.trim()
+    if (!text) return
+
+    sendBtn.disabled = true
+
+    try {
+      const { error } = await supabase
+        .from('chat_messages')
+        .insert({
+          user_id: currentUser.id,
+          content: text
+        })
+
+      if (error) throw error
+      input.value = ''
+    } catch (err) {
+      alert(err.message || 'تعذر إرسال الرسالة')
+    } finally {
+      sendBtn.disabled = false
+    }
+  }
+
+  function blockChat() {
+    messagesBox.classList.add('hidden')
+    chatFooter.classList.add('hidden')
+    blockedView.style.display = 'flex'
+    setStatus('الجهاز غير مسموح')
+  }
+
+  function allowChat() {
+    messagesBox.classList.remove('hidden')
+    chatFooter.classList.remove('hidden')
+    blockedView.style.display = 'none'
+
+    const roleLabel = allowedDevice?.role === 'admin' ? 'أدمن' : 'عضو'
+    setStatus(`تم السماح لهذا الجهاز بالدخول - ${roleLabel}`)
+  }
+
+  async function initRealtime() {
+    supabase
+      .channel('chat_messages_live')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'chat_messages'
+        },
+        (payload) => {
+          renderMessage(payload.new)
+          scrollToBottom()
+        }
+      )
+      .subscribe()
+  }
+
+  async function init() {
+    try {
+      currentUser = await ensureAnonymousLogin()
+      currentDeviceId = await resolveDeviceId(currentUser)
+      allowedDevice = await findAllowedByDeviceId(currentDeviceId)
+
+      if (!allowedDevice) {
+        blockChat()
+        return
+      }
+
+      allowChat()
+      await loadMessages()
+      await initRealtime()
+    } catch (err) {
+      console.error(err)
+      setStatus('حدث خطأ أثناء التهيئة')
+      alert(err.message || 'حدث خطأ غير متوقع')
+    }
+  }
+
+  sendBtn.addEventListener('click', sendMessage)
+  input.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      sendMessage()
+    }
+  })
+
+  init()
+</script>
+
+</body>
+</html>
