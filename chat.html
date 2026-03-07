@@ -103,7 +103,7 @@
       font-size:15px;
     }
 
-    #blockedView{
+    #stateView{
       display:none;
       flex:1;
       align-items:center;
@@ -111,7 +111,7 @@
       padding:24px;
     }
 
-    .blocked-box{
+    .state-box{
       width:min(560px,100%);
       background:var(--card);
       border:1px solid var(--border);
@@ -120,17 +120,21 @@
       text-align:center;
     }
 
-    .blocked-box h2{
+    .state-box h2{
       margin-top:0;
     }
 
-    .blocked-box p{
+    .state-box p{
       color:var(--muted);
       line-height:1.8;
     }
 
     .danger{
       color:#fca5a5;
+    }
+
+    .warn{
+      color:#fcd34d;
     }
 
     .hidden{
@@ -141,7 +145,7 @@
 <body>
 
   <header>💬 الشات الخاص</header>
-  <div id="statusBar">جاري التحقق من الجهاز...</div>
+  <div id="statusBar">جاري التهيئة...</div>
 
   <div id="messages"></div>
 
@@ -150,15 +154,10 @@
     <button id="send">إرسال</button>
   </footer>
 
-  <div id="blockedView">
-    <div class="blocked-box">
-      <h2>هذا الجهاز غير مسموح</h2>
-      <p class="danger">
-        لا يمكن فتح الشات من هذا الجهاز حاليًا.
-      </p>
-      <p>
-        افتح <b>modern.html</b> أولًا لإرسال طلب انضمام، ثم انتظر موافقة الأدمن.
-      </p>
+  <div id="stateView">
+    <div class="state-box">
+      <h2 id="stateTitle">حالة الجهاز</h2>
+      <p id="stateText">...</p>
     </div>
   </div>
 
@@ -178,7 +177,9 @@
   const input = document.getElementById('text')
   const sendBtn = document.getElementById('send')
   const chatFooter = document.getElementById('chatFooter')
-  const blockedView = document.getElementById('blockedView')
+  const stateView = document.getElementById('stateView')
+  const stateTitle = document.getElementById('stateTitle')
+  const stateText = document.getElementById('stateText')
   const statusBar = document.getElementById('statusBar')
 
   function setStatus(text) {
@@ -220,19 +221,17 @@
     return data.user
   }
 
-async function findAllowedByDeviceId(deviceId) {
-  const { data, error } = await supabase.rpc('get_current_allowed_device', {
-    p_device_id: deviceId
-  })
+  async function findAllowedByDeviceId(deviceId) {
+    const { data, error } = await supabase.rpc('get_current_allowed_device', {
+      p_device_id: deviceId
+    })
 
-  if (error) throw error
+    if (error) throw error
 
-  if (Array.isArray(data)) {
-    return data[0] || null
+    if (Array.isArray(data)) return data[0] || null
+    return data || null
   }
 
-  return data || null
-}
   async function resolveDeviceId(user) {
     let stored = getStoredDeviceId()
 
@@ -240,7 +239,6 @@ async function findAllowedByDeviceId(deviceId) {
       return stored
     }
 
-    // fallback ذكي للأجهزة التي تمت الموافقة عليها قبل نظام localStorage device_id
     const fallbackAllowed = await findAllowedByDeviceId(user.id)
     if (fallbackAllowed) {
       saveDeviceId(user.id)
@@ -250,6 +248,50 @@ async function findAllowedByDeviceId(deviceId) {
     const newDeviceId = createNewDeviceId()
     saveDeviceId(newDeviceId)
     return newDeviceId
+  }
+
+  async function getPendingJoinRequestByDeviceId(deviceId) {
+    const { data, error } = await supabase
+      .from('device_join_requests')
+      .select('*')
+      .eq('device_id', deviceId)
+      .eq('status', 'pending')
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle()
+
+    if (error) throw error
+    return data
+  }
+
+  async function getRejectedJoinRequestByDeviceId(deviceId) {
+    const { data, error } = await supabase
+      .from('device_join_requests')
+      .select('*')
+      .eq('device_id', deviceId)
+      .eq('status', 'rejected')
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle()
+
+    if (error) throw error
+    return data
+  }
+
+  async function createJoinRequest(deviceId, userId) {
+    const { data, error } = await supabase
+      .from('device_join_requests')
+      .insert({
+        user_id: userId,
+        device_id: deviceId,
+        label: 'Unknown Device',
+        status: 'pending'
+      })
+      .select()
+      .single()
+
+    if (error) throw error
+    return data
   }
 
   function renderMessage(msg) {
@@ -313,17 +355,18 @@ async function findAllowedByDeviceId(deviceId) {
     }
   }
 
-  function blockChat() {
+  function showState(title, text) {
     messagesBox.classList.add('hidden')
     chatFooter.classList.add('hidden')
-    blockedView.style.display = 'flex'
-    setStatus('الجهاز غير مسموح')
+    stateView.style.display = 'flex'
+    stateTitle.textContent = title
+    stateText.innerHTML = text
   }
 
   function allowChat() {
     messagesBox.classList.remove('hidden')
     chatFooter.classList.remove('hidden')
-    blockedView.style.display = 'none'
+    stateView.style.display = 'none'
 
     const roleLabel = allowedDevice?.role === 'admin' ? 'أدمن' : 'عضو'
     setStatus(`تم السماح لهذا الجهاز بالدخول - ${roleLabel}`)
@@ -353,26 +396,53 @@ async function findAllowedByDeviceId(deviceId) {
       currentDeviceId = await resolveDeviceId(currentUser)
       allowedDevice = await findAllowedByDeviceId(currentDeviceId)
 
-      if (!allowedDevice) {
-        blockChat()
+      if (allowedDevice) {
+        allowChat()
+        await loadMessages()
+        await initRealtime()
         return
       }
 
-      allowChat()
-      await loadMessages()
-      await initRealtime()
+      const pendingRequest = await getPendingJoinRequestByDeviceId(currentDeviceId)
+      if (pendingRequest) {
+        setStatus('الطلب قيد الانتظار')
+        showState(
+          'بانتظار الموافقة',
+          'تم إرسال طلب انضمام لهذا الجهاز سابقًا، والرجاء انتظار موافقة الأدمن.'
+        )
+        return
+      }
+
+      const rejectedRequest = await getRejectedJoinRequestByDeviceId(currentDeviceId)
+      if (rejectedRequest) {
+        setStatus('تم رفض الطلب')
+        showState(
+          'تم رفض هذا الجهاز',
+          'تم رفض طلب هذا الجهاز. تواصل مع الأدمن إذا كان هذا بالخطأ.'
+        )
+        return
+      }
+
+      await createJoinRequest(currentDeviceId, currentUser.id)
+
+      setStatus('تم إرسال طلب الانضمام')
+      showState(
+        'تم إرسال طلب انضمام',
+        'هذا الجهاز غير مضاف بعد. تم إرسال الطلب تلقائيًا إلى الأدمن، الرجاء انتظار الموافقة.'
+      )
     } catch (err) {
       console.error(err)
-      setStatus('حدث خطأ أثناء التهيئة')
-      alert(err.message || 'حدث خطأ غير متوقع')
+      setStatus('حدث خطأ')
+      showState(
+        'حدث خطأ',
+        escapeHtml(err.message || 'حدث خطأ غير متوقع')
+      )
     }
   }
 
   sendBtn.addEventListener('click', sendMessage)
   input.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') {
-      sendMessage()
-    }
+    if (e.key === 'Enter') sendMessage()
   })
 
   init()
