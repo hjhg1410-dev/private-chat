@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>admin panel</title>
+  <title>لوحة الأدمن</title>
   <style>
     :root {
       --bg: #0f172a;
@@ -165,6 +165,7 @@
       </p>
       <button id="startBtn">ابدأ الفحص وتحميل اللوحة</button>
       <button id="refreshBtn" class="secondary">تحديث البيانات</button>
+      <button id="deleteAllRequestsBtn" class="danger">مسح جميع الطلبات</button>
       <button id="logoutBtn" class="secondary">تسجيل خروج الجلسة فقط</button>
     </div>
 
@@ -208,13 +209,14 @@
     const SUPABASE_URL = 'https://vbwtsnxrshgjqmbgtagw.supabase.co'
     const SUPABASE_ANON_KEY = 'sb_publishable_esJOtB6hRNf48Uo61txcyg_9F3yolJO'
 
-    // هذا هو device_id الحالي للأدمن في قاعدة البيانات
-    const ADMIN_BOOTSTRAP_DEVICE_ID = '38f046bb-6d42-405e-b585-6b54b238aad3'
+    // هذا هو device_id الحالي للأدمن عندك
+    const ADMIN_BOOTSTRAP_DEVICE_ID = '24aa51aa-e06d-4fcb-9d25-c8bdc40c74f1'
 
     const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
 
     const startBtn = document.getElementById('startBtn')
     const refreshBtn = document.getElementById('refreshBtn')
+    const deleteAllRequestsBtn = document.getElementById('deleteAllRequestsBtn')
     const logoutBtn = document.getElementById('logoutBtn')
     const output = document.getElementById('output')
     const statusBox = document.getElementById('statusBox')
@@ -319,6 +321,20 @@
         p_admin_device_id: deviceId,
         p_allowed_device_id: allowedDeviceId
       })
+
+      if (error) throw error
+    }
+
+    async function deleteAllRequests(deviceId) {
+      const isAdmin = await checkAdminDevice(deviceId)
+      if (!isAdmin) {
+        throw new Error('هذا ليس جهاز الأدمن')
+      }
+
+      const { error } = await supabase
+        .from('device_join_requests')
+        .delete()
+        .neq('id', '00000000-0000-0000-0000-000000000000')
 
       if (error) throw error
     }
@@ -490,6 +506,20 @@
 
     startBtn.addEventListener('click', runAdminPage)
     refreshBtn.addEventListener('click', runAdminPage)
+
+    deleteAllRequestsBtn.addEventListener('click', async () => {
+      try {
+        const confirmed = confirm('هل أنت متأكد من حذف جميع طلبات الانضمام؟')
+        if (!confirmed) return
+
+        setStatus('جاري حذف جميع الطلبات...', 'warn')
+        await deleteAllRequests(getDeviceId())
+        setStatus('تم حذف جميع الطلبات بنجاح', 'ok')
+        await runAdminPage()
+      } catch (err) {
+        setStatus(err.message || 'تعذر حذف جميع الطلبات', 'danger-box')
+      }
+    })
 
     logoutBtn.addEventListener('click', async () => {
       try {
