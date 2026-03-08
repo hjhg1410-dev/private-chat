@@ -325,21 +325,21 @@
       if (error) throw error
     }
 
-async function deleteAllRequests(deviceId) {
-
-  const isAdmin = await checkAdminDevice(deviceId)
-
-  if (!isAdmin) {
-    throw new Error("هذا ليس جهاز الأدمن")
-  }
-
-  const { error } = await supabase.rpc(
-    "admin_delete_all_requests",
-    { p_admin_device_id: deviceId }
-  )
-
-  if (error) throw error
-}
+    async function deleteAllRequests(deviceId) {
+    
+      const isAdmin = await checkAdminDevice(deviceId)
+    
+      if (!isAdmin) {
+        throw new Error("هذا ليس جهاز الأدمن")
+      }
+    
+      const { error } = await supabase.rpc(
+        "admin_delete_all_requests",
+        { p_admin_device_id: deviceId }
+      )
+    
+      if (error) throw error
+    }
 
     async function renderAdminPanel() {
       const pendingRequests = await listPendingRequests(currentDeviceId)
@@ -535,4 +535,5 @@ async function deleteAllRequests(deviceId) {
   </script>
 </body>
 </html>
+
 
