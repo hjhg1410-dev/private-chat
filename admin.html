@@ -160,9 +160,7 @@
   <div class="wrap">
     <div class="card">
       <h1>لوحة الأدمن الخاصة</h1>
-      <p>
-        هذه الصفحة خاصة بجهاز الأدمن فقط، ومخصصة لإدارة طلبات الانضمام والأجهزة المسموحة.
-      </p>
+      <p>هذه الصفحة تعمل فقط إذا كان هذا الجهاز هو جهاز الأدمن الحقيقي.</p>
       <button id="startBtn">ابدأ الفحص وتحميل اللوحة</button>
       <button id="refreshBtn" class="secondary">تحديث البيانات</button>
       <button id="deleteAllRequestsBtn" class="danger">مسح جميع الطلبات</button>
@@ -207,10 +205,7 @@
     import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
     const SUPABASE_URL = 'https://vbwtsnxrshgjqmbgtagw.supabase.co'
-    const SUPABASE_ANON_KEY = 'sb_publishable_esJOtB6hRNf48Uo61txcyg_9F3yolJO'
-
-    // هذا هو device_id الحالي للأدمن عندك
-    const ADMIN_BOOTSTRAP_DEVICE_ID = '24aa51aa-e06d-4fcb-9d25-c8bdc40c74f1'
+    const SUPABASE_ANON_KEY = 'ضع_هنا_نفس_المفتاح_المنشور_publishable_key_عندك'
 
     const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
 
@@ -246,14 +241,7 @@
     }
 
     function getDeviceId() {
-      let deviceId = localStorage.getItem('device_id')
-
-      if (!deviceId) {
-        deviceId = ADMIN_BOOTSTRAP_DEVICE_ID
-        localStorage.setItem('device_id', deviceId)
-      }
-
-      return deviceId
+      return localStorage.getItem('device_id')
     }
 
     async function ensureAnonymousLogin() {
@@ -271,6 +259,8 @@
     }
 
     async function checkAdminDevice(deviceId) {
+      if (!deviceId) return false
+
       const { data, error } = await supabase.rpc('current_device_is_admin', {
         p_device_id: deviceId
       })
@@ -326,18 +316,10 @@
     }
 
     async function deleteAllRequests(deviceId) {
-    
-      const isAdmin = await checkAdminDevice(deviceId)
-    
-      if (!isAdmin) {
-        throw new Error("هذا ليس جهاز الأدمن")
-      }
-    
-      const { error } = await supabase.rpc(
-        "admin_delete_all_requests",
-        { p_admin_device_id: deviceId }
-      )
-    
+      const { error } = await supabase.rpc('admin_delete_all_requests', {
+        p_admin_device_id: deviceId
+      })
+
       if (error) throw error
     }
 
@@ -381,9 +363,7 @@
               approveBtn.disabled = true
               rejectBtn.disabled = true
               setStatus('جاري قبول الطلب...', 'warn')
-
               await approveRequest(currentDeviceId, request.id, input.value.trim())
-
               setStatus('تم قبول الطلب بنجاح', 'ok')
               await runAdminPage()
             } catch (err) {
@@ -399,9 +379,7 @@
               approveBtn.disabled = true
               rejectBtn.disabled = true
               setStatus('جاري رفض الطلب...', 'warn')
-
               await rejectRequest(currentDeviceId, request.id)
-
               setStatus('تم رفض الطلب بنجاح', 'ok')
               await runAdminPage()
             } catch (err) {
@@ -453,9 +431,7 @@
               try {
                 deactivateBtn.disabled = true
                 setStatus('جاري تعطيل الجهاز...', 'warn')
-
                 await deactivateDevice(currentDeviceId, device.id)
-
                 setStatus('تم تعطيل الجهاز بنجاح', 'ok')
                 await runAdminPage()
               } catch (err) {
@@ -535,5 +511,3 @@
   </script>
 </body>
 </html>
-
-
