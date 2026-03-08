@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>تسجيل الدخول</title>
+  <style>
+    :root{
+      --bg:#0f172a;
+      --card:#1e293b;
+      --text:#f8fafc;
+      --muted:#94a3b8;
+      --border:#334155;
+      --btn:#2563eb;
+      --danger:#ef4444;
+      --ok:#10b981;
+    }
+
+    *{box-sizing:border-box}
+
+    body{
+      margin:0;
+      min-height:100vh;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      background:var(--bg);
+      color:var(--text);
+      font-family:Tahoma,sans-serif;
+      padding:20px;
+    }
+
+    .card{
+      width:min(420px,100%);
+      background:var(--card);
+      border:1px solid var(--border);
+      border-radius:18px;
+      padding:24px;
+      box-shadow:0 10px 30px rgba(0,0,0,.25);
+    }
+
+    h1{
+      margin:0 0 10px;
+      font-size:28px;
+      text-align:center;
+    }
+
+    p{
+      margin:0 0 20px;
+      color:var(--muted);
+      text-align:center;
+      line-height:1.8;
+    }
+
+    label{
+      display:block;
+      margin:12px 0 6px;
+      font-size:14px;
+    }
+
+    input{
+      width:100%;
+      padding:12px;
+      border-radius:10px;
+      border:1px solid var(--border);
+      background:#0b1220;
+      color:var(--text);
+      font-size:16px;
+      outline:none;
+    }
+
+    button{
+      width:100%;
+      margin-top:16px;
+      padding:12px;
+      border:none;
+      border-radius:10px;
+      background:var(--btn);
+      color:white;
+      font-size:16px;
+      cursor:pointer;
+    }
+
+    .msg{
+      margin-top:14px;
+      padding:12px;
+      border-radius:10px;
+      display:none;
+      font-size:14px;
+      line-height:1.7;
+    }
+
+    .error{
+      background:rgba(239,68,68,.15);
+      color:#fecaca;
+      border:1px solid rgba(239,68,68,.3);
+    }
+
+    .success{
+      background:rgba(16,185,129,.15);
+      color:#bbf7d0;
+      border:1px solid rgba(16,185,129,.3);
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>تسجيل الدخول</h1>
+    <p>ادخل بالإيميل وكلمة المرور للدخول إلى الشات الخاص.</p>
+
+    <label for="email">الإيميل</label>
+    <input id="email" type="email" placeholder="admin@h.com" />
+
+    <label for="password">كلمة المرور</label>
+    <input id="password" type="password" placeholder="••••••••" />
+
+    <button id="loginBtn">دخول</button>
+
+    <div id="errorBox" class="msg error"></div>
+    <div id="successBox" class="msg success"></div>
+  </div>
+
+  <script type="module">
+    import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+
+    const supabase = createClient(
+        'https://vbwtsnxrshgjqmbgtagw.supabase.co',
+        'sb_publishable_esJOtB6hRNf48Uo61txcyg_9F3yolJO'
+    )
+
+    const emailInput = document.getElementById('email')
+    const passwordInput = document.getElementById('password')
+    const loginBtn = document.getElementById('loginBtn')
+    const errorBox = document.getElementById('errorBox')
+    const successBox = document.getElementById('successBox')
+
+    function showError(message) {
+      errorBox.style.display = 'block'
+      successBox.style.display = 'none'
+      errorBox.textContent = message
+    }
+
+    function showSuccess(message) {
+      successBox.style.display = 'block'
+      errorBox.style.display = 'none'
+      successBox.textContent = message
+    }
+
+    async function checkExistingSession() {
+      const { data, error } = await supabase.auth.getSession()
+      if (error) return
+
+      if (data.session?.user) {
+        window.location.href = 'chat.html'
+      }
+    }
+
+    async function login() {
+      const email = emailInput.value.trim()
+      const password = passwordInput.value.trim()
+
+      if (!email || !password) {
+        showError('أدخل الإيميل وكلمة المرور')
+        return
+      }
+
+      loginBtn.disabled = true
+      loginBtn.textContent = 'جاري الدخول...'
+
+      try {
+        const { data, error } = await supabase.auth.signInWithPassword({
+          email,
+          password
+        })
+
+        if (error) throw error
+
+        showSuccess('تم تسجيل الدخول بنجاح...')
+        setTimeout(() => {
+          window.location.href = 'chat.html'
+        }, 700)
+      } catch (err) {
+        showError(err.message || 'فشل تسجيل الدخول')
+      } finally {
+        loginBtn.disabled = false
+        loginBtn.textContent = 'دخول'
+      }
+    }
+
+    loginBtn.addEventListener('click', login)
+
+    passwordInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') login()
+    })
+
+    checkExistingSession()
+  </script>
+</body>
+</html>
