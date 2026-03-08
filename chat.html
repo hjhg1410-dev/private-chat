@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Private Chat</title>
+  <title>الشات الخاص</title>
   <style>
     :root{
       --bg:#0f172a;
@@ -14,8 +14,8 @@
       --muted:#94a3b8;
       --border:#334155;
       --danger:#ef4444;
-      --warn:#f59e0b;
       --ok:#10b981;
+      --header:#1e293b;
     }
 
     *{ box-sizing:border-box; }
@@ -31,11 +31,32 @@
     }
 
     header{
-      background:var(--card);
+      background:var(--header);
       padding:14px 16px;
       text-align:center;
       font-size:18px;
       border-bottom:1px solid var(--border);
+      position:relative;
+    }
+
+    .top-actions{
+      position:absolute;
+      left:12px;
+      top:10px;
+      display:flex;
+      gap:8px;
+    }
+
+    .top-btn{
+      background:#334155;
+      color:#fff;
+      border:none;
+      border-radius:8px;
+      padding:8px 10px;
+      cursor:pointer;
+      font-size:13px;
+      width:auto;
+      margin:0;
     }
 
     #statusBar{
@@ -63,11 +84,19 @@
       background:var(--other);
       align-self:flex-start;
       word-break:break-word;
+      border:1px solid rgba(255,255,255,.04);
     }
 
     .msg.mine{
       background:var(--mine);
       align-self:flex-end;
+    }
+
+    .msg .name{
+      font-size:12px;
+      opacity:.9;
+      margin-bottom:5px;
+      font-weight:bold;
     }
 
     .msg .meta{
@@ -91,6 +120,8 @@
       border:none;
       outline:none;
       font-size:15px;
+      background:#fff;
+      color:#111827;
     }
 
     button{
@@ -103,9 +134,9 @@
       font-size:15px;
     }
 
-    #stateView{
-      display:none;
+    #loadingView{
       flex:1;
+      display:flex;
       align-items:center;
       justify-content:center;
       padding:24px;
@@ -120,23 +151,6 @@
       text-align:center;
     }
 
-    .state-box h2{
-      margin-top:0;
-    }
-
-    .state-box p{
-      color:var(--muted);
-      line-height:1.8;
-    }
-
-    .danger{
-      color:#fca5a5;
-    }
-
-    .warn{
-      color:#fcd34d;
-    }
-
     .hidden{
       display:none !important;
     }
@@ -144,46 +158,63 @@
 </head>
 <body>
 
-  <header>💬 الشات الخاص</header>
-  <div id="statusBar">جاري التهيئة...</div>
+  <header>
+    الشات الخاص 🤍
+    <div class="top-actions">
+      <button id="adminBtn" class="top-btn hidden">لوحة الأدمن</button>
+      <button id="logoutBtn" class="top-btn">خروج</button>
+    </div>
+  </header>
 
-  <div id="messages"></div>
+  <div id="statusBar">جاري التحقق من الجلسة...</div>
 
-  <footer id="chatFooter">
+  <div id="loadingView">
+    <div class="state-box">
+      <h2>جاري التحميل</h2>
+      <p id="loadingText">لحظة من فضلك...</p>
+    </div>
+  </div>
+
+  <div id="messages" class="hidden"></div>
+
+  <footer id="chatFooter" class="hidden">
     <input id="text" placeholder="اكتب رسالة..." />
     <button id="send">إرسال</button>
   </footer>
-
-  <div id="stateView">
-    <div class="state-box">
-      <h2 id="stateTitle">حالة الجهاز</h2>
-      <p id="stateText">...</p>
-    </div>
-  </div>
 
 <script type="module">
   import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
   const supabase = createClient(
-    'https://vbwtsnxrshgjqmbgtagw.supabase.co',
-    'sb_publishable_esJOtB6hRNf48Uo61txcyg_9F3yolJO'
+        'https://vbwtsnxrshgjqmbgtagw.supabase.co',
+        'sb_publishable_esJOtB6hRNf48Uo61txcyg_9F3yolJO'
   )
-
-  let currentUser = null
-  let currentDeviceId = null
-  let allowedDevice = null
 
   const messagesBox = document.getElementById('messages')
   const input = document.getElementById('text')
   const sendBtn = document.getElementById('send')
   const chatFooter = document.getElementById('chatFooter')
-  const stateView = document.getElementById('stateView')
-  const stateTitle = document.getElementById('stateTitle')
-  const stateText = document.getElementById('stateText')
+  const loadingView = document.getElementById('loadingView')
+  const loadingText = document.getElementById('loadingText')
   const statusBar = document.getElementById('statusBar')
+  const logoutBtn = document.getElementById('logoutBtn')
+  const adminBtn = document.getElementById('adminBtn')
+
+  let currentUser = null
+  let currentRole = 'member'
+  let currentEmail = ''
 
   function setStatus(text) {
     statusBar.textContent = text
+  }
+
+  function escapeHtml(str) {
+    return String(str)
+      .replaceAll('&', '&amp;')
+      .replaceAll('<', '&lt;')
+      .replaceAll('>', '&gt;')
+      .replaceAll('"', '&quot;')
+      .replaceAll("'", '&#039;')
   }
 
   function formatTime(iso) {
@@ -191,132 +222,39 @@
     return d.toLocaleTimeString('ar', { hour: '2-digit', minute: '2-digit' })
   }
 
-  function scrollToBottom() {
-    messagesBox.scrollTop = messagesBox.scrollHeight
+  function showChat() {
+    loadingView.classList.add('hidden')
+    messagesBox.classList.remove('hidden')
+    chatFooter.classList.remove('hidden')
   }
 
-  function getStoredDeviceId() {
-    return localStorage.getItem('device_id')
+  function getDisplayNameFromEmail(email) {
+    if (!email) return 'مستخدم'
+    return email.split('@')[0]
   }
 
-  function saveDeviceId(deviceId) {
-    localStorage.setItem('device_id', deviceId)
-  }
-
-  function createNewDeviceId() {
-    return crypto.randomUUID()
-  }
-
-  async function ensureAnonymousLogin() {
-    const { data: sessionData, error: sessionError } = await supabase.auth.getSession()
-    if (sessionError) throw sessionError
-
-    if (sessionData.session?.user) {
-      return sessionData.session.user
-    }
-
-    const { data, error } = await supabase.auth.signInAnonymously()
+  async function requireSession() {
+    const { data, error } = await supabase.auth.getSession()
     if (error) throw error
 
-    return data.user
-  }
-
-  async function findAllowedByDeviceId(deviceId) {
-    const { data, error } = await supabase.rpc('get_current_allowed_device', {
-      p_device_id: deviceId
-    })
-
-    if (error) throw error
-
-    if (Array.isArray(data)) return data[0] || null
-    return data || null
-  }
-
-  async function resolveDeviceId(user) {
-    let stored = getStoredDeviceId()
-
-    if (stored) {
-      return stored
+    const user = data.session?.user
+    if (!user || user.is_anonymous || !user.email) {
+      window.location.href = 'login.html'
+      throw new Error('لا توجد جلسة تسجيل دخول صالحة')
     }
 
-    const fallbackAllowed = await findAllowedByDeviceId(user.id)
-    if (fallbackAllowed) {
-      saveDeviceId(user.id)
-      return user.id
-    }
-
-    const newDeviceId = createNewDeviceId()
-    saveDeviceId(newDeviceId)
-    return newDeviceId
+    return user
   }
 
-  async function getPendingJoinRequestByDeviceId(deviceId) {
+  async function getRole(userId) {
     const { data, error } = await supabase
-      .from('device_join_requests')
-      .select('*')
-      .eq('device_id', deviceId)
-      .eq('status', 'pending')
-      .order('created_at', { ascending: false })
-      .limit(1)
+      .from('user_roles')
+      .select('role')
+      .eq('id', userId)
       .maybeSingle()
 
     if (error) throw error
-    return data
-  }
-
-  async function getRejectedJoinRequestByDeviceId(deviceId) {
-    const { data, error } = await supabase
-      .from('device_join_requests')
-      .select('*')
-      .eq('device_id', deviceId)
-      .eq('status', 'rejected')
-      .order('created_at', { ascending: false })
-      .limit(1)
-      .maybeSingle()
-
-    if (error) throw error
-    return data
-  }
-
-  async function createJoinRequest(deviceId, userId) {
-    const { data, error } = await supabase
-      .from('device_join_requests')
-      .insert({
-        user_id: userId,
-        device_id: deviceId,
-        label: 'Unknown Device',
-        status: 'pending'
-      })
-      .select()
-      .single()
-
-    if (error) throw error
-    return data
-  }
-
-  function renderMessage(msg) {
-    const div = document.createElement('div')
-    div.className = 'msg'
-
-    if (msg.user_id === currentUser.id) {
-      div.classList.add('mine')
-    }
-
-    div.innerHTML = `
-      <div>${escapeHtml(msg.content)}</div>
-      <div class="meta">${formatTime(msg.created_at)}</div>
-    `
-
-    messagesBox.appendChild(div)
-  }
-
-  function escapeHtml(str) {
-    return str
-      .replaceAll('&', '&amp;')
-      .replaceAll('<', '&lt;')
-      .replaceAll('>', '&gt;')
-      .replaceAll('"', '&quot;')
-      .replaceAll("'", '&#039;')
+    return data?.role || 'member'
   }
 
   async function loadMessages() {
@@ -329,7 +267,28 @@
 
     messagesBox.innerHTML = ''
     data.forEach(renderMessage)
-    scrollToBottom()
+    messagesBox.scrollTop = messagesBox.scrollHeight
+  }
+
+  function renderMessage(msg) {
+    const div = document.createElement('div')
+    div.className = 'msg'
+    if (msg.user_id === currentUser.id) {
+      div.classList.add('mine')
+    }
+
+    const senderName =
+      msg.user_id === currentUser.id
+        ? 'أنت'
+        : (msg.sender_name || 'مستخدم')
+
+    div.innerHTML = `
+      <div class="name">${escapeHtml(senderName)}</div>
+      <div>${escapeHtml(msg.content || '')}</div>
+      <div class="meta">${formatTime(msg.created_at)}</div>
+    `
+
+    messagesBox.appendChild(div)
   }
 
   async function sendMessage() {
@@ -343,7 +302,8 @@
         .from('chat_messages')
         .insert({
           user_id: currentUser.id,
-          content: text
+          content: text,
+          sender_name: getDisplayNameFromEmail(currentEmail)
         })
 
       if (error) throw error
@@ -355,26 +315,9 @@
     }
   }
 
-  function showState(title, text) {
-    messagesBox.classList.add('hidden')
-    chatFooter.classList.add('hidden')
-    stateView.style.display = 'flex'
-    stateTitle.textContent = title
-    stateText.innerHTML = text
-  }
-
-  function allowChat() {
-    messagesBox.classList.remove('hidden')
-    chatFooter.classList.remove('hidden')
-    stateView.style.display = 'none'
-
-    const roleLabel = allowedDevice?.role === 'admin' ? 'أدمن' : 'عضو'
-    setStatus(`تم السماح لهذا الجهاز بالدخول - ${roleLabel}`)
-  }
-
   async function initRealtime() {
     supabase
-      .channel('chat_messages_live')
+      .channel('chat_messages_live_v2')
       .on(
         'postgres_changes',
         {
@@ -384,65 +327,46 @@
         },
         (payload) => {
           renderMessage(payload.new)
-          scrollToBottom()
+          messagesBox.scrollTop = messagesBox.scrollHeight
         }
       )
       .subscribe()
   }
 
+  async function logout() {
+    await supabase.auth.signOut()
+    window.location.href = 'login.html'
+  }
+
   async function init() {
     try {
-      currentUser = await ensureAnonymousLogin()
-      currentDeviceId = await resolveDeviceId(currentUser)
-      allowedDevice = await findAllowedByDeviceId(currentDeviceId)
+      currentUser = await requireSession()
+      currentEmail = currentUser.email || ''
+      currentRole = await getRole(currentUser.id)
 
-      if (allowedDevice) {
-        allowChat()
-        await loadMessages()
-        await initRealtime()
-        return
+      setStatus(`تم تسجيل الدخول: ${currentEmail} | الصلاحية: ${currentRole}`)
+
+      if (currentRole === 'admin') {
+        adminBtn.classList.remove('hidden')
       }
 
-      const pendingRequest = await getPendingJoinRequestByDeviceId(currentDeviceId)
-      if (pendingRequest) {
-        setStatus('الطلب قيد الانتظار')
-        showState(
-          'بانتظار الموافقة',
-          'تم إرسال طلب انضمام لهذا الجهاز سابقًا، والرجاء انتظار موافقة الأدمن.'
-        )
-        return
-      }
-
-      const rejectedRequest = await getRejectedJoinRequestByDeviceId(currentDeviceId)
-      if (rejectedRequest) {
-        setStatus('تم رفض الطلب')
-        showState(
-          'تم رفض هذا الجهاز',
-          'تم رفض طلب هذا الجهاز. تواصل مع الأدمن إذا كان هذا بالخطأ.'
-        )
-        return
-      }
-
-      await createJoinRequest(currentDeviceId, currentUser.id)
-
-      setStatus('تم إرسال طلب الانضمام')
-      showState(
-        'تم إرسال طلب انضمام',
-        'هذا الجهاز غير مضاف بعد. تم إرسال الطلب تلقائيًا إلى الأدمن، الرجاء انتظار الموافقة.'
-      )
+      showChat()
+      await loadMessages()
+      await initRealtime()
     } catch (err) {
       console.error(err)
-      setStatus('حدث خطأ')
-      showState(
-        'حدث خطأ',
-        escapeHtml(err.message || 'حدث خطأ غير متوقع')
-      )
+      loadingText.textContent = err.message || 'حدث خطأ'
     }
   }
 
   sendBtn.addEventListener('click', sendMessage)
   input.addEventListener('keydown', (e) => {
     if (e.key === 'Enter') sendMessage()
+  })
+
+  logoutBtn.addEventListener('click', logout)
+  adminBtn.addEventListener('click', () => {
+    window.location.href = 'admin.html'
   })
 
   init()
