@@ -76,25 +76,26 @@
       border:1px solid rgba(239,68,68,.3);
     }
 
-    button, select{
+    button, select, input{
       width:100%;
       padding:12px;
-      border:none;
       border-radius:10px;
-      cursor:pointer;
       font-size:16px;
       margin-top:10px;
     }
 
     button{
+      border:none;
+      cursor:pointer;
       color:#fff;
       background:var(--btn);
     }
 
-    select{
+    input, select{
       background:#0b1220;
       color:#fff;
       border:1px solid var(--border);
+      outline:none;
     }
 
     .secondary{
@@ -167,7 +168,7 @@
   <div class="wrap">
     <div class="card">
       <h1>لوحة الأدمن</h1>
-      <p>إدارة المستخدمين والأدوار.</p>
+      <p>إدارة المستخدمين والأدوار وإنشاء حسابات جديدة.</p>
       <button id="reloadBtn">تحديث اللوحة</button>
       <button id="goChatBtn" class="secondary">الرجوع إلى الشات</button>
       <button id="logoutBtn" class="danger-btn">تسجيل الخروج</button>
@@ -190,9 +191,22 @@
 
     <div id="adminPanel" class="hidden">
       <div class="grid">
-        <div class="card">
-          <h2>الحساب الحالي</h2>
-          <div id="meBox"></div>
+        <div>
+          <div class="card">
+            <h2>الحساب الحالي</h2>
+            <div id="meBox"></div>
+          </div>
+
+          <div class="card">
+            <h2>إنشاء مستخدم جديد</h2>
+            <input id="newEmail" type="email" placeholder="user@example.com" />
+            <input id="newPassword" type="password" placeholder="كلمة المرور" />
+            <select id="newRole">
+              <option value="member">member</option>
+              <option value="admin">admin</option>
+            </select>
+            <button id="createUserBtn">إنشاء المستخدم</button>
+          </div>
         </div>
 
         <div class="card">
@@ -207,8 +221,8 @@
     import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
     const supabase = createClient(
-        'https://vbwtsnxrshgjqmbgtagw.supabase.co',
-        'sb_publishable_esJOtB6hRNf48Uo61txcyg_9F3yolJO'
+      'https://vbwtsnxrshgjqmbgtagw.supabase.co',
+      'sb_publishable_esJOtB6hRNf48Uo61txcyg_9F3yolJO'
     )
 
     const statusBox = document.getElementById('statusBox')
@@ -221,6 +235,11 @@
     const reloadBtn = document.getElementById('reloadBtn')
     const goChatBtn = document.getElementById('goChatBtn')
     const logoutBtn = document.getElementById('logoutBtn')
+
+    const newEmail = document.getElementById('newEmail')
+    const newPassword = document.getElementById('newPassword')
+    const newRole = document.getElementById('newRole')
+    const createUserBtn = document.getElementById('createUserBtn')
 
     let currentUser = null
     let currentRole = 'member'
@@ -305,6 +324,26 @@
       }
     }
 
+    async function createUserByAdmin(email, password, role) {
+      const { data, error } = await supabase.functions.invoke('create-user-by-admin', {
+        body: {
+          email,
+          password
+        }
+      })
+
+      if (error) throw error
+      if (data?.error) throw new Error(data.error)
+
+      const createdUserId = data?.user?.id
+      if (!createdUserId) {
+        throw new Error('تم إنشاء المستخدم لكن لم يصل id')
+      }
+
+      await setUserRole(createdUserId, role)
+      return data
+    }
+
     function renderMe() {
       meBox.innerHTML = `
         <div class="item">
@@ -383,6 +422,51 @@
       })
     }
 
+    async function handleCreateUser() {
+      const email = newEmail.value.trim().toLowerCase()
+      const password = newPassword.value.trim()
+      const role = newRole.value
+
+      if (!email || !password) {
+        setStatus('أدخل الإيميل وكلمة المرور', 'danger')
+        return
+      }
+
+      if (password.length < 8) {
+        setStatus('كلمة المرور يجب أن تكون 8 أحرف أو أكثر', 'danger')
+        return
+      }
+
+      createUserBtn.disabled = true
+
+      try {
+        setStatus('جاري إنشاء المستخدم...', 'warn')
+
+        const result = await createUserByAdmin(email, password, role)
+
+        setStatus(`تم إنشاء المستخدم بنجاح: ${email}`, 'ok')
+        showDebug({
+          step: 'create_user_success',
+          result
+        })
+
+        newEmail.value = ''
+        newPassword.value = ''
+        newRole.value = 'member'
+
+        await runPage()
+      } catch (err) {
+        console.error(err)
+        setStatus(err.message || 'تعذر إنشاء المستخدم', 'danger')
+        showDebug({
+          step: 'create_user_error',
+          message: err.message || String(err)
+        })
+      } finally {
+        createUserBtn.disabled = false
+      }
+    }
+
     async function runPage() {
       notAdminBox.classList.add('hidden')
       adminPanel.classList.add('hidden')
@@ -429,6 +513,7 @@
       window.location.href = 'chat.html'
     })
     logoutBtn.addEventListener('click', logout)
+    createUserBtn.addEventListener('click', handleCreateUser)
 
     runPage()
   </script>
