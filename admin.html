@@ -30,7 +30,7 @@
     }
 
     .wrap{
-      max-width:980px;
+      max-width:1100px;
       margin:0 auto;
     }
 
@@ -76,7 +76,7 @@
       border:1px solid rgba(239,68,68,.3);
     }
 
-    button{
+    button, select{
       width:100%;
       padding:12px;
       border:none;
@@ -84,8 +84,17 @@
       cursor:pointer;
       font-size:16px;
       margin-top:10px;
+    }
+
+    button{
       color:#fff;
       background:var(--btn);
+    }
+
+    select{
+      background:#0b1220;
+      color:#fff;
+      border:1px solid var(--border);
     }
 
     .secondary{
@@ -98,12 +107,6 @@
 
     .hidden{
       display:none !important;
-    }
-
-    .row{
-      display:grid;
-      grid-template-columns:1fr 1fr;
-      gap:16px;
     }
 
     .item{
@@ -147,8 +150,14 @@
       border:1px solid var(--border);
     }
 
-    @media (max-width:720px){
-      .row{
+    .grid{
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:16px;
+    }
+
+    @media (max-width: 768px){
+      .grid{
         grid-template-columns:1fr;
       }
     }
@@ -158,7 +167,7 @@
   <div class="wrap">
     <div class="card">
       <h1>لوحة الأدمن</h1>
-      <p>هذه الصفحة تعمل فقط للمستخدم الذي دوره admin في جدول user_roles.</p>
+      <p>إدارة المستخدمين والأدوار.</p>
       <button id="reloadBtn">تحديث اللوحة</button>
       <button id="goChatBtn" class="secondary">الرجوع إلى الشات</button>
       <button id="logoutBtn" class="danger-btn">تسجيل الخروج</button>
@@ -180,14 +189,16 @@
     </div>
 
     <div id="adminPanel" class="hidden">
-      <div class="card">
-        <h2>معلومات الحساب الحالي</h2>
-        <div id="meBox"></div>
-      </div>
+      <div class="grid">
+        <div class="card">
+          <h2>الحساب الحالي</h2>
+          <div id="meBox"></div>
+        </div>
 
-      <div class="card">
-        <h2>المستخدمون المسجلون في الأدوار</h2>
-        <div id="rolesList"></div>
+        <div class="card">
+          <h2>المستخدمون</h2>
+          <div id="usersList"></div>
+        </div>
       </div>
     </div>
   </div>
@@ -205,7 +216,7 @@
     const notAdminBox = document.getElementById('notAdminBox')
     const adminPanel = document.getElementById('adminPanel')
     const meBox = document.getElementById('meBox')
-    const rolesList = document.getElementById('rolesList')
+    const usersList = document.getElementById('usersList')
 
     const reloadBtn = document.getElementById('reloadBtn')
     const goChatBtn = document.getElementById('goChatBtn')
@@ -259,40 +270,39 @@
       return data?.role || 'member'
     }
 
-    async function loadRoles() {
+    async function loadUsers() {
       const { data, error } = await supabase
-        .from('user_roles')
+        .from('admin_users_view')
         .select('*')
-        .order('role', { ascending: true })
+        .order('created_at', { ascending: true })
 
       if (error) throw error
+      return data || []
+    }
 
-      rolesList.innerHTML = ''
+    async function setUserRole(userId, role) {
+      const { data: existing, error: existingError } = await supabase
+        .from('user_roles')
+        .select('id')
+        .eq('id', userId)
+        .maybeSingle()
 
-      if (!data || data.length === 0) {
-        rolesList.innerHTML = `
-          <div class="item">
-            <div class="meta">لا توجد بيانات في user_roles.</div>
-          </div>
-        `
-        return
+      if (existingError) throw existingError
+
+      if (existing) {
+        const { error } = await supabase
+          .from('user_roles')
+          .update({ role })
+          .eq('id', userId)
+
+        if (error) throw error
+      } else {
+        const { error } = await supabase
+          .from('user_roles')
+          .insert({ id: userId, role })
+
+        if (error) throw error
       }
-
-      data.forEach((row) => {
-        const item = document.createElement('div')
-        item.className = 'item'
-        item.innerHTML = `
-          <div class="item-title">
-            ${escapeHtml(row.id)}
-            <span class="badge">${escapeHtml(row.role)}</span>
-          </div>
-          <div class="meta">
-            user_id: ${escapeHtml(row.id)}<br>
-            role: ${escapeHtml(row.role)}
-          </div>
-        `
-        rolesList.appendChild(item)
-      })
     }
 
     function renderMe() {
@@ -305,11 +315,72 @@
           <div class="meta">
             id: ${escapeHtml(currentUser.id)}<br>
             email: ${escapeHtml(currentUser.email || '')}<br>
-            is_anonymous: ${String(currentUser.is_anonymous)}<br>
             last_sign_in_at: ${escapeHtml(currentUser.last_sign_in_at || '')}
           </div>
         </div>
       `
+    }
+
+    async function renderUsers() {
+      const users = await loadUsers()
+
+      if (!users.length) {
+        usersList.innerHTML = `
+          <div class="item">
+            <div class="meta">لا يوجد مستخدمون.</div>
+          </div>
+        `
+        return
+      }
+
+      usersList.innerHTML = ''
+
+      users.forEach((user) => {
+        const item = document.createElement('div')
+        item.className = 'item'
+
+        const isMe = user.id === currentUser.id
+
+        item.innerHTML = `
+          <div class="item-title">
+            ${escapeHtml(user.email || 'بدون إيميل')}
+            <span class="badge">${escapeHtml(user.role)}</span>
+            ${isMe ? '<span class="badge">أنت</span>' : ''}
+          </div>
+          <div class="meta">
+            id: ${escapeHtml(user.id)}<br>
+            created_at: ${escapeHtml(user.created_at || '')}<br>
+            last_sign_in_at: ${escapeHtml(user.last_sign_in_at || '')}
+          </div>
+          <select class="roleSelect">
+            <option value="member" ${user.role === 'member' ? 'selected' : ''}>member</option>
+            <option value="admin" ${user.role === 'admin' ? 'selected' : ''}>admin</option>
+          </select>
+          <button class="saveRoleBtn">حفظ الدور</button>
+        `
+
+        const roleSelect = item.querySelector('.roleSelect')
+        const saveRoleBtn = item.querySelector('.saveRoleBtn')
+
+        saveRoleBtn.addEventListener('click', async () => {
+          try {
+            saveRoleBtn.disabled = true
+            setStatus('جاري حفظ الدور...', 'warn')
+
+            await setUserRole(user.id, roleSelect.value)
+
+            setStatus('تم حفظ الدور بنجاح', 'ok')
+            await runPage()
+          } catch (err) {
+            console.error(err)
+            setStatus(err.message || 'تعذر حفظ الدور', 'danger')
+          } finally {
+            saveRoleBtn.disabled = false
+          }
+        })
+
+        usersList.appendChild(item)
+      })
     }
 
     async function runPage() {
@@ -337,7 +408,7 @@
         adminPanel.classList.remove('hidden')
 
         renderMe()
-        await loadRoles()
+        await renderUsers()
       } catch (err) {
         console.error(err)
         setStatus(err.message || 'حدث خطأ غير متوقع', 'danger')
