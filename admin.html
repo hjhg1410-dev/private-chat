@@ -1,157 +1,155 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>لوحة الأدمن</title>
   <style>
-    :root {
-      --bg: #0f172a;
-      --card: #1e293b;
-      --text: #f8fafc;
-      --muted: #94a3b8;
-      --border: #334155;
-      --btn: #2563eb;
-      --btn2: #475569;
-      --ok: #10b981;
-      --warn: #f59e0b;
-      --danger: #ef4444;
+    :root{
+      --bg:#0f172a;
+      --card:#1e293b;
+      --text:#f8fafc;
+      --muted:#94a3b8;
+      --border:#334155;
+      --btn:#2563eb;
+      --btn2:#475569;
+      --danger:#ef4444;
+      --ok:#10b981;
+      --warn:#f59e0b;
     }
 
-    * { box-sizing: border-box; }
+    *{box-sizing:border-box}
 
-    body {
-      margin: 0;
-      font-family: Tahoma, sans-serif;
-      background: var(--bg);
-      color: var(--text);
-      min-height: 100vh;
-      padding: 24px;
+    body{
+      margin:0;
+      background:var(--bg);
+      color:var(--text);
+      font-family:Tahoma,sans-serif;
+      min-height:100vh;
+      padding:24px;
     }
 
-    .wrap {
-      max-width: 980px;
-      margin: 0 auto;
+    .wrap{
+      max-width:980px;
+      margin:0 auto;
     }
 
-    .card {
-      background: var(--card);
-      border: 1px solid var(--border);
-      border-radius: 16px;
-      padding: 20px;
-      margin-bottom: 16px;
+    .card{
+      background:var(--card);
+      border:1px solid var(--border);
+      border-radius:16px;
+      padding:20px;
+      margin-bottom:16px;
     }
 
-    h1 { margin-top: 0; font-size: 24px; }
-    h2 { font-size: 18px; margin-bottom: 10px; }
-    p { color: var(--muted); line-height: 1.7; }
-
-    button, input {
-      width: 100%;
-      padding: 12px;
-      border-radius: 10px;
-      border: 1px solid var(--border);
-      font-size: 16px;
+    h1,h2{
+      margin-top:0;
     }
 
-    input {
-      background: #0b1220;
-      color: var(--text);
+    p{
+      color:var(--muted);
+      line-height:1.8;
     }
 
-    button {
-      background: var(--btn);
-      color: white;
-      cursor: pointer;
-      border: none;
-      margin-top: 10px;
+    .status{
+      padding:12px;
+      border-radius:12px;
+      margin-top:12px;
+      font-weight:bold;
     }
 
-    button.secondary { background: var(--btn2); }
-    button.danger { background: var(--danger); }
-    button.warn-btn { background: #d97706; }
-
-    .status {
-      padding: 12px;
-      border-radius: 12px;
-      margin: 12px 0;
-      font-weight: bold;
+    .ok{
+      background:rgba(16,185,129,.15);
+      color:#86efac;
+      border:1px solid rgba(16,185,129,.3);
     }
 
-    .ok {
-      background: rgba(16,185,129,0.15);
-      color: #6ee7b7;
-      border: 1px solid rgba(16,185,129,0.3);
+    .warn{
+      background:rgba(245,158,11,.15);
+      color:#fcd34d;
+      border:1px solid rgba(245,158,11,.3);
     }
 
-    .warn {
-      background: rgba(245,158,11,0.15);
-      color: #fcd34d;
-      border: 1px solid rgba(245,158,11,0.3);
+    .danger{
+      background:rgba(239,68,68,.15);
+      color:#fca5a5;
+      border:1px solid rgba(239,68,68,.3);
     }
 
-    .danger-box {
-      background: rgba(239,68,68,0.15);
-      color: #fca5a5;
-      border: 1px solid rgba(239,68,68,0.3);
+    button{
+      width:100%;
+      padding:12px;
+      border:none;
+      border-radius:10px;
+      cursor:pointer;
+      font-size:16px;
+      margin-top:10px;
+      color:#fff;
+      background:var(--btn);
     }
 
-    .hidden { display: none; }
-
-    .row {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 16px;
+    .secondary{
+      background:var(--btn2);
     }
 
-    .item {
-      border: 1px solid var(--border);
-      border-radius: 14px;
-      padding: 14px;
-      margin-top: 12px;
-      background: rgba(15, 23, 42, 0.45);
+    .danger-btn{
+      background:var(--danger);
     }
 
-    .item-title {
-      font-weight: bold;
-      margin-bottom: 8px;
+    .hidden{
+      display:none !important;
     }
 
-    .meta {
-      font-size: 13px;
-      color: var(--muted);
-      line-height: 1.8;
+    .row{
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:16px;
     }
 
-    .badge {
-      display: inline-block;
-      padding: 4px 8px;
-      border-radius: 999px;
-      font-size: 12px;
-      margin-left: 6px;
-      background: rgba(255,255,255,0.08);
+    .item{
+      border:1px solid var(--border);
+      border-radius:14px;
+      padding:14px;
+      margin-top:12px;
+      background:rgba(15,23,42,.45);
     }
 
-    .small-input {
-      margin-top: 10px;
+    .item-title{
+      font-weight:bold;
+      margin-bottom:8px;
     }
 
-    pre {
-      background: #020617;
-      color: #d1d5db;
-      padding: 14px;
-      border-radius: 12px;
-      overflow: auto;
-      white-space: pre-wrap;
-      word-break: break-word;
-      direction: ltr;
-      text-align: left;
-      border: 1px solid var(--border);
+    .meta{
+      font-size:13px;
+      color:var(--muted);
+      line-height:1.8;
     }
 
-    @media (max-width: 720px) {
-      .row {
-        grid-template-columns: 1fr;
+    .badge{
+      display:inline-block;
+      padding:4px 8px;
+      border-radius:999px;
+      font-size:12px;
+      margin-left:6px;
+      background:rgba(255,255,255,.08);
+    }
+
+    pre{
+      background:#020617;
+      color:#d1d5db;
+      padding:14px;
+      border-radius:12px;
+      overflow:auto;
+      white-space:pre-wrap;
+      word-break:break-word;
+      direction:ltr;
+      text-align:left;
+      border:1px solid var(--border);
+    }
+
+    @media (max-width:720px){
+      .row{
+        grid-template-columns:1fr;
       }
     }
   </style>
@@ -159,44 +157,37 @@
 <body>
   <div class="wrap">
     <div class="card">
-      <h1>لوحة الأدمن الخاصة</h1>
-      <p>هذه الصفحة تعمل فقط إذا كان هذا الجهاز هو جهاز الأدمن الحقيقي.</p>
-      <button id="startBtn">ابدأ الفحص وتحميل اللوحة</button>
-      <button id="refreshBtn" class="secondary">تحديث البيانات</button>
-      <button id="deleteAllRequestsBtn" class="danger">مسح جميع الطلبات</button>
-      <button id="logoutBtn" class="secondary">تسجيل خروج الجلسة فقط</button>
+      <h1>لوحة الأدمن</h1>
+      <p>هذه الصفحة تعمل فقط للمستخدم الذي دوره admin في جدول user_roles.</p>
+      <button id="reloadBtn">تحديث اللوحة</button>
+      <button id="goChatBtn" class="secondary">الرجوع إلى الشات</button>
+      <button id="logoutBtn" class="danger-btn">تسجيل الخروج</button>
     </div>
 
     <div class="card">
       <h2>الحالة الحالية</h2>
-      <div id="statusBox" class="status warn">لم يبدأ الفحص بعد</div>
+      <div id="statusBox" class="status warn">جاري التحقق...</div>
     </div>
 
     <div class="card">
       <h2>بيانات التطوير</h2>
-      <pre id="output">جاهز...</pre>
+      <pre id="debugBox">جاهز...</pre>
     </div>
 
     <div id="notAdminBox" class="card hidden">
-      <h2>هذا ليس جهاز الأدمن</h2>
-      <div class="status danger-box">
-        الجهاز الحالي لا يطابق جهاز الأدمن المسجل.
-      </div>
+      <h2>الدخول مرفوض</h2>
+      <div class="status danger">هذا الحساب ليس أدمن.</div>
     </div>
 
-    <div id="adminPanel" class="card hidden">
-      <h2>لوحة الأدمن</h2>
+    <div id="adminPanel" class="hidden">
+      <div class="card">
+        <h2>معلومات الحساب الحالي</h2>
+        <div id="meBox"></div>
+      </div>
 
-      <div class="row">
-        <div>
-          <h2>طلبات الانضمام المعلقة</h2>
-          <div id="pendingRequestsList"></div>
-        </div>
-
-        <div>
-          <h2>الأجهزة المسموحة</h2>
-          <div id="allowedDevicesList"></div>
-        </div>
+      <div class="card">
+        <h2>المستخدمون المسجلون في الأدوار</h2>
+        <div id="rolesList"></div>
       </div>
     </div>
   </div>
@@ -204,310 +195,171 @@
   <script type="module">
     import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
-    const SUPABASE_URL = 'https://vbwtsnxrshgjqmbgtagw.supabase.co'
-    const SUPABASE_ANON_KEY = 'sb_publishable_esJOtB6hRNf48Uo61txcyg_9F3yolJO'
+    const supabase = createClient(
+        'https://vbwtsnxrshgjqmbgtagw.supabase.co',
+        'sb_publishable_esJOtB6hRNf48Uo61txcyg_9F3yolJO'
+    )
 
-    const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
-
-    const startBtn = document.getElementById('startBtn')
-    const refreshBtn = document.getElementById('refreshBtn')
-    const deleteAllRequestsBtn = document.getElementById('deleteAllRequestsBtn')
-    const logoutBtn = document.getElementById('logoutBtn')
-    const output = document.getElementById('output')
     const statusBox = document.getElementById('statusBox')
+    const debugBox = document.getElementById('debugBox')
     const notAdminBox = document.getElementById('notAdminBox')
     const adminPanel = document.getElementById('adminPanel')
-    const pendingRequestsList = document.getElementById('pendingRequestsList')
-    const allowedDevicesList = document.getElementById('allowedDevicesList')
+    const meBox = document.getElementById('meBox')
+    const rolesList = document.getElementById('rolesList')
+
+    const reloadBtn = document.getElementById('reloadBtn')
+    const goChatBtn = document.getElementById('goChatBtn')
+    const logoutBtn = document.getElementById('logoutBtn')
 
     let currentUser = null
-    let currentDeviceId = null
+    let currentRole = 'member'
 
-    function show(data) {
-      output.textContent =
+    function setStatus(text, type = 'warn') {
+      statusBox.className = `status ${type}`
+      statusBox.textContent = text
+    }
+
+    function showDebug(data) {
+      debugBox.textContent =
         typeof data === 'string'
           ? data
           : JSON.stringify(data, null, 2)
     }
 
-    function setStatus(text, type = 'warn') {
-      statusBox.className = 'status ' + type
-      statusBox.textContent = text
+    function escapeHtml(str) {
+      return String(str)
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;')
+        .replaceAll('"', '&quot;')
+        .replaceAll("'", '&#039;')
     }
 
-    function hidePanels() {
+    async function requireSession() {
+      const { data, error } = await supabase.auth.getSession()
+      if (error) throw error
+
+      const user = data.session?.user
+      if (!user || user.is_anonymous || !user.email) {
+        window.location.href = 'login.html'
+        throw new Error('لا توجد جلسة صالحة')
+      }
+
+      return user
+    }
+
+    async function getRole(userId) {
+      const { data, error } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('id', userId)
+        .maybeSingle()
+
+      if (error) throw error
+      return data?.role || 'member'
+    }
+
+    async function loadRoles() {
+      const { data, error } = await supabase
+        .from('user_roles')
+        .select('*')
+        .order('role', { ascending: true })
+
+      if (error) throw error
+
+      rolesList.innerHTML = ''
+
+      if (!data || data.length === 0) {
+        rolesList.innerHTML = `
+          <div class="item">
+            <div class="meta">لا توجد بيانات في user_roles.</div>
+          </div>
+        `
+        return
+      }
+
+      data.forEach((row) => {
+        const item = document.createElement('div')
+        item.className = 'item'
+        item.innerHTML = `
+          <div class="item-title">
+            ${escapeHtml(row.id)}
+            <span class="badge">${escapeHtml(row.role)}</span>
+          </div>
+          <div class="meta">
+            user_id: ${escapeHtml(row.id)}<br>
+            role: ${escapeHtml(row.role)}
+          </div>
+        `
+        rolesList.appendChild(item)
+      })
+    }
+
+    function renderMe() {
+      meBox.innerHTML = `
+        <div class="item">
+          <div class="item-title">
+            ${escapeHtml(currentUser.email || 'بدون إيميل')}
+            <span class="badge">${escapeHtml(currentRole)}</span>
+          </div>
+          <div class="meta">
+            id: ${escapeHtml(currentUser.id)}<br>
+            email: ${escapeHtml(currentUser.email || '')}<br>
+            is_anonymous: ${String(currentUser.is_anonymous)}<br>
+            last_sign_in_at: ${escapeHtml(currentUser.last_sign_in_at || '')}
+          </div>
+        </div>
+      `
+    }
+
+    async function runPage() {
       notAdminBox.classList.add('hidden')
       adminPanel.classList.add('hidden')
-    }
-
-    function getDeviceId() {
-      return localStorage.getItem('device_id')
-    }
-
-    async function ensureAnonymousLogin() {
-      const { data: sessionData, error: sessionError } = await supabase.auth.getSession()
-      if (sessionError) throw sessionError
-
-      if (sessionData.session?.user) {
-        return sessionData.session.user
-      }
-
-      const { data, error } = await supabase.auth.signInAnonymously()
-      if (error) throw error
-
-      return data.user
-    }
-
-    async function checkAdminDevice(deviceId) {
-      if (!deviceId) return false
-
-      const { data, error } = await supabase.rpc('current_device_is_admin', {
-        p_device_id: deviceId
-      })
-
-      if (error) throw error
-      return data === true
-    }
-
-    async function listPendingRequests(deviceId) {
-      const { data, error } = await supabase.rpc('admin_list_pending_requests', {
-        p_admin_device_id: deviceId
-      })
-
-      if (error) throw error
-      return data || []
-    }
-
-    async function listAllowedDevices(deviceId) {
-      const { data, error } = await supabase.rpc('admin_list_allowed_devices', {
-        p_admin_device_id: deviceId
-      })
-
-      if (error) throw error
-      return data || []
-    }
-
-    async function approveRequest(deviceId, requestId, labelValue) {
-      const { error } = await supabase.rpc('approve_join_request_by_device', {
-        p_admin_device_id: deviceId,
-        p_request_id: requestId,
-        p_label: labelValue || null
-      })
-
-      if (error) throw error
-    }
-
-    async function rejectRequest(deviceId, requestId) {
-      const { error } = await supabase.rpc('reject_join_request_by_device', {
-        p_admin_device_id: deviceId,
-        p_request_id: requestId
-      })
-
-      if (error) throw error
-    }
-
-    async function deactivateDevice(deviceId, allowedDeviceId) {
-      const { error } = await supabase.rpc('deactivate_allowed_device_by_device', {
-        p_admin_device_id: deviceId,
-        p_allowed_device_id: allowedDeviceId
-      })
-
-      if (error) throw error
-    }
-
-    async function deleteAllRequests(deviceId) {
-      const { error } = await supabase.rpc('admin_delete_all_requests', {
-        p_admin_device_id: deviceId
-      })
-
-      if (error) throw error
-    }
-
-    async function renderAdminPanel() {
-      const pendingRequests = await listPendingRequests(currentDeviceId)
-      const allowedDevices = await listAllowedDevices(currentDeviceId)
-
-      if (pendingRequests.length === 0) {
-        pendingRequestsList.innerHTML = `
-          <div class="item">
-            <div class="meta">لا توجد طلبات معلقة حاليًا.</div>
-          </div>
-        `
-      } else {
-        pendingRequestsList.innerHTML = ''
-        pendingRequests.forEach((request) => {
-          const item = document.createElement('div')
-          item.className = 'item'
-          item.innerHTML = `
-            <div class="item-title">
-              ${request.label || 'Unknown Device'}
-              <span class="badge">pending</span>
-            </div>
-            <div class="meta">
-              request_id: ${request.id}<br>
-              device_id: ${request.device_id}<br>
-              user_id: ${request.user_id}<br>
-              created_at: ${request.created_at}
-            </div>
-            <input class="small-input" type="text" placeholder="اسم هذا الجهاز بعد القبول" value="${request.label || ''}" />
-            <button class="approve-btn">موافقة</button>
-            <button class="danger reject-btn">رفض</button>
-          `
-
-          const input = item.querySelector('.small-input')
-          const approveBtn = item.querySelector('.approve-btn')
-          const rejectBtn = item.querySelector('.reject-btn')
-
-          approveBtn.addEventListener('click', async () => {
-            try {
-              approveBtn.disabled = true
-              rejectBtn.disabled = true
-              setStatus('جاري قبول الطلب...', 'warn')
-              await approveRequest(currentDeviceId, request.id, input.value.trim())
-              setStatus('تم قبول الطلب بنجاح', 'ok')
-              await runAdminPage()
-            } catch (err) {
-              setStatus(err.message || 'تعذر قبول الطلب', 'danger-box')
-            } finally {
-              approveBtn.disabled = false
-              rejectBtn.disabled = false
-            }
-          })
-
-          rejectBtn.addEventListener('click', async () => {
-            try {
-              approveBtn.disabled = true
-              rejectBtn.disabled = true
-              setStatus('جاري رفض الطلب...', 'warn')
-              await rejectRequest(currentDeviceId, request.id)
-              setStatus('تم رفض الطلب بنجاح', 'ok')
-              await runAdminPage()
-            } catch (err) {
-              setStatus(err.message || 'تعذر رفض الطلب', 'danger-box')
-            } finally {
-              approveBtn.disabled = false
-              rejectBtn.disabled = false
-            }
-          })
-
-          pendingRequestsList.appendChild(item)
-        })
-      }
-
-      if (allowedDevices.length === 0) {
-        allowedDevicesList.innerHTML = `
-          <div class="item">
-            <div class="meta">لا توجد أجهزة مفعلة.</div>
-          </div>
-        `
-      } else {
-        allowedDevicesList.innerHTML = ''
-        allowedDevices.forEach((device) => {
-          const isAdmin = device.role === 'admin'
-          const item = document.createElement('div')
-          item.className = 'item'
-          item.innerHTML = `
-            <div class="item-title">
-              ${device.label || 'Unnamed Device'}
-              <span class="badge">${device.role}</span>
-            </div>
-            <div class="meta">
-              allowed_device_id: ${device.id}<br>
-              device_id: ${device.device_id}<br>
-              user_id: ${device.user_id}<br>
-              active: ${device.active}<br>
-              created_at: ${device.created_at}
-            </div>
-            ${
-              isAdmin
-                ? `<div class="meta" style="margin-top:10px;">هذا جهاز الأدمن ولا يمكن تعطيله من هنا.</div>`
-                : `<button class="warn-btn deactivate-btn">تعطيل هذا الجهاز</button>`
-            }
-          `
-
-          if (!isAdmin) {
-            const deactivateBtn = item.querySelector('.deactivate-btn')
-            deactivateBtn.addEventListener('click', async () => {
-              try {
-                deactivateBtn.disabled = true
-                setStatus('جاري تعطيل الجهاز...', 'warn')
-                await deactivateDevice(currentDeviceId, device.id)
-                setStatus('تم تعطيل الجهاز بنجاح', 'ok')
-                await runAdminPage()
-              } catch (err) {
-                setStatus(err.message || 'تعذر تعطيل الجهاز', 'danger-box')
-              } finally {
-                deactivateBtn.disabled = false
-              }
-            })
-          }
-
-          allowedDevicesList.appendChild(item)
-        })
-      }
-    }
-
-    async function runAdminPage() {
-      hidePanels()
-      setStatus('جاري فحص جهاز الأدمن...', 'warn')
+      setStatus('جاري التحقق من الجلسة والصلاحية...', 'warn')
 
       try {
-        currentDeviceId = getDeviceId()
-        currentUser = await ensureAnonymousLogin()
+        currentUser = await requireSession()
+        currentRole = await getRole(currentUser.id)
 
-        const isAdmin = await checkAdminDevice(currentDeviceId)
-
-        show({
-          step: 'admin_check',
-          device_id: currentDeviceId,
+        showDebug({
+          step: 'admin_auth_check',
           user: currentUser,
-          is_admin: isAdmin
+          role: currentRole
         })
 
-        if (!isAdmin) {
+        if (currentRole !== 'admin') {
           notAdminBox.classList.remove('hidden')
-          setStatus('هذا ليس جهاز الأدمن', 'danger-box')
+          setStatus('هذا الحساب ليس أدمن', 'danger')
           return
         }
 
+        setStatus('تم التحقق من الأدمن بنجاح', 'ok')
         adminPanel.classList.remove('hidden')
-        setStatus('تم التعرف على جهاز الأدمن', 'ok')
-        await renderAdminPanel()
+
+        renderMe()
+        await loadRoles()
       } catch (err) {
-        setStatus(err.message || 'حدث خطأ غير متوقع', 'danger-box')
-        show({
+        console.error(err)
+        setStatus(err.message || 'حدث خطأ غير متوقع', 'danger')
+        showDebug({
           step: 'error',
           message: err.message || String(err)
         })
       }
     }
 
-    startBtn.addEventListener('click', runAdminPage)
-    refreshBtn.addEventListener('click', runAdminPage)
+    async function logout() {
+      await supabase.auth.signOut()
+      window.location.href = 'login.html'
+    }
 
-    deleteAllRequestsBtn.addEventListener('click', async () => {
-      try {
-        const confirmed = confirm('هل أنت متأكد من حذف جميع طلبات الانضمام؟')
-        if (!confirmed) return
-
-        setStatus('جاري حذف جميع الطلبات...', 'warn')
-        await deleteAllRequests(getDeviceId())
-        setStatus('تم حذف جميع الطلبات بنجاح', 'ok')
-        await runAdminPage()
-      } catch (err) {
-        setStatus(err.message || 'تعذر حذف جميع الطلبات', 'danger-box')
-      }
+    reloadBtn.addEventListener('click', runPage)
+    goChatBtn.addEventListener('click', () => {
+      window.location.href = 'chat.html'
     })
+    logoutBtn.addEventListener('click', logout)
 
-    logoutBtn.addEventListener('click', async () => {
-      try {
-        await supabase.auth.signOut()
-        setStatus('تم تسجيل خروج الجلسة فقط', 'warn')
-        show('تم تسجيل الخروج. device_id لا يزال محفوظًا.')
-      } catch (err) {
-        setStatus(err.message || 'تعذر تسجيل الخروج', 'danger-box')
-      }
-    })
+    runPage()
   </script>
 </body>
 </html>
