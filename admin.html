@@ -138,6 +138,12 @@
       background:rgba(255,255,255,.08);
     }
 
+    .badge-banned{
+      background:rgba(239,68,68,.18);
+      color:#fecaca;
+      border:1px solid rgba(239,68,68,.3);
+    }
+
     pre{
       background:#020617;
       color:#d1d5db;
@@ -157,8 +163,22 @@
       gap:16px;
     }
 
+    .btn-row{
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:10px;
+      margin-top:10px;
+    }
+
+    .btn-row-3{
+      display:grid;
+      grid-template-columns:1fr 1fr 1fr;
+      gap:10px;
+      margin-top:10px;
+    }
+
     @media (max-width: 768px){
-      .grid{
+      .grid, .btn-row, .btn-row-3{
         grid-template-columns:1fr;
       }
     }
@@ -265,6 +285,19 @@
         .replaceAll("'", '&#039;')
     }
 
+    function extractErrorMessage(err) {
+      if (!err) return 'حدث خطأ غير معروف'
+      if (typeof err === 'string') return err
+      if (err.message) return err.message
+      if (err.context?.json?.error) return err.context.json.error
+      if (err.context?.error) return err.context.error
+      try {
+        return JSON.stringify(err)
+      } catch {
+        return 'حدث خطأ غير معروف'
+      }
+    }
+
     async function requireSession() {
       const { data, error } = await supabase.auth.getSession()
       if (error) throw error
@@ -326,10 +359,7 @@
 
     async function createUserByAdmin(email, password, role) {
       const { data, error } = await supabase.functions.invoke('create-user-by-admin', {
-        body: {
-          email,
-          password
-        }
+        body: { email, password }
       })
 
       if (error) throw error
@@ -341,6 +371,19 @@
       }
 
       await setUserRole(createdUserId, role)
+      return data
+    }
+
+    async function banUserByAdmin(userId, ban) {
+      const { data, error } = await supabase.functions.invoke('ban-user-by-admin', {
+        body: {
+          user_id: userId,
+          ban
+        }
+      })
+
+      if (error) throw error
+      if (data?.error) throw new Error(data.error)
       return data
     }
 
@@ -379,27 +422,36 @@
         item.className = 'item'
 
         const isMe = user.id === currentUser.id
+        const bannedUntil = user.banned_until || user.ban_duration || user.banned_until_at || null
 
         item.innerHTML = `
           <div class="item-title">
             ${escapeHtml(user.email || 'بدون إيميل')}
             <span class="badge">${escapeHtml(user.role)}</span>
             ${isMe ? '<span class="badge">أنت</span>' : ''}
+            ${bannedUntil ? '<span class="badge badge-banned">محظور</span>' : ''}
           </div>
           <div class="meta">
             id: ${escapeHtml(user.id)}<br>
             created_at: ${escapeHtml(user.created_at || '')}<br>
-            last_sign_in_at: ${escapeHtml(user.last_sign_in_at || '')}
+            last_sign_in_at: ${escapeHtml(user.last_sign_in_at || '')}<br>
+            banned_until: ${escapeHtml(String(bannedUntil || 'غير محظور'))}
           </div>
           <select class="roleSelect">
             <option value="member" ${user.role === 'member' ? 'selected' : ''}>member</option>
             <option value="admin" ${user.role === 'admin' ? 'selected' : ''}>admin</option>
           </select>
-          <button class="saveRoleBtn">حفظ الدور</button>
+          <div class="btn-row-3">
+            <button class="saveRoleBtn">حفظ الدور</button>
+            <button class="banBtn danger-btn" ${isMe ? 'disabled' : ''}>حظر</button>
+            <button class="unbanBtn secondary" ${isMe ? 'disabled' : ''}>فك الحظر</button>
+          </div>
         `
 
         const roleSelect = item.querySelector('.roleSelect')
         const saveRoleBtn = item.querySelector('.saveRoleBtn')
+        const banBtn = item.querySelector('.banBtn')
+        const unbanBtn = item.querySelector('.unbanBtn')
 
         saveRoleBtn.addEventListener('click', async () => {
           try {
@@ -412,11 +464,67 @@
             await runPage()
           } catch (err) {
             console.error(err)
-            setStatus(err.message || 'تعذر حفظ الدور', 'danger')
+            setStatus(extractErrorMessage(err), 'danger')
           } finally {
             saveRoleBtn.disabled = false
           }
         })
+
+        if (!isMe) {
+          banBtn.addEventListener('click', async () => {
+            try {
+              banBtn.disabled = true
+              setStatus('جاري حظر المستخدم...', 'warn')
+
+              const result = await banUserByAdmin(user.id, true)
+
+              setStatus('تم حظر المستخدم', 'ok')
+              showDebug({
+                step: 'ban_user_success',
+                user_id: user.id,
+                result
+              })
+
+              await runPage()
+            } catch (err) {
+              console.error(err)
+              setStatus(extractErrorMessage(err), 'danger')
+              showDebug({
+                step: 'ban_user_error',
+                message: extractErrorMessage(err)
+              })
+            } finally {
+              banBtn.disabled = false
+            }
+          })
+
+          unbanBtn.addEventListener('click', async () => {
+            try {
+              unbanBtn.disabled = true
+              setStatus('جاري فك الحظر...', 'warn')
+
+              const result = await banUserByAdmin(user.id, false)
+
+              setStatus('تم فك الحظر', 'ok')
+              showDebug({
+                step: 'unban_user_success',
+                user_id: user.id,
+                result
+              })
+
+              await runPage()
+            } catch (err) {
+              console.error(err)
+              setStatus(extractErrorMessage(err), 'danger')
+              showDebug({
+                step: 'unban_user_error',
+                message: extractErrorMessage(err)
+              })
+            } finally {
+              unbanBtn.disabled = false
+            }
+          })
+        }
 
         usersList.appendChild(item)
       })
@@ -457,10 +565,10 @@
         await runPage()
       } catch (err) {
         console.error(err)
-        setStatus(err.message || 'تعذر إنشاء المستخدم', 'danger')
+        setStatus(extractErrorMessage(err), 'danger')
         showDebug({
           step: 'create_user_error',
-          message: err.message || String(err)
+          message: extractErrorMessage(err)
         })
       } finally {
         createUserBtn.disabled = false
@@ -495,10 +603,10 @@
         await renderUsers()
       } catch (err) {
         console.error(err)
-        setStatus(err.message || 'حدث خطأ غير متوقع', 'danger')
+        setStatus(extractErrorMessage(err), 'danger')
         showDebug({
           step: 'error',
-          message: err.message || String(err)
+          message: extractErrorMessage(err)
         })
       }
     }
