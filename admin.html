@@ -163,13 +163,6 @@
       gap:16px;
     }
 
-    .btn-row{
-      display:grid;
-      grid-template-columns:1fr 1fr;
-      gap:10px;
-      margin-top:10px;
-    }
-
     .btn-row-3{
       display:grid;
       grid-template-columns:1fr 1fr 1fr;
@@ -178,7 +171,7 @@
     }
 
     @media (max-width: 768px){
-      .grid, .btn-row, .btn-row-3{
+      .grid, .btn-row-3{
         grid-template-columns:1fr;
       }
     }
@@ -422,14 +415,15 @@
         item.className = 'item'
 
         const isMe = user.id === currentUser.id
-        const bannedUntil = user.banned_until || user.ban_duration || user.banned_until_at || null
+        const bannedUntil = user.banned_until || null
+        const isBanned = !!bannedUntil && String(bannedUntil) !== 'null'
 
         item.innerHTML = `
           <div class="item-title">
             ${escapeHtml(user.email || 'بدون إيميل')}
             <span class="badge">${escapeHtml(user.role)}</span>
             ${isMe ? '<span class="badge">أنت</span>' : ''}
-            ${bannedUntil ? '<span class="badge badge-banned">محظور</span>' : ''}
+            ${isBanned ? '<span class="badge badge-banned">محظور</span>' : ''}
           </div>
           <div class="meta">
             id: ${escapeHtml(user.id)}<br>
@@ -460,8 +454,8 @@
 
             await setUserRole(user.id, roleSelect.value)
 
-            setStatus('تم حفظ الدور بنجاح', 'ok')
             await runPage()
+            setStatus('تم حفظ الدور بنجاح', 'ok')
           } catch (err) {
             console.error(err)
             setStatus(extractErrorMessage(err), 'danger')
@@ -478,7 +472,6 @@
 
               const result = await banUserByAdmin(user.id, true)
 
-              setStatus('تم حظر المستخدم', 'ok')
               showDebug({
                 step: 'ban_user_success',
                 user_id: user.id,
@@ -486,6 +479,7 @@
               })
 
               await runPage()
+              setStatus('تم حظر المستخدم', 'ok')
             } catch (err) {
               console.error(err)
               setStatus(extractErrorMessage(err), 'danger')
@@ -505,7 +499,6 @@
 
               const result = await banUserByAdmin(user.id, false)
 
-              setStatus('تم فك الحظر', 'ok')
               showDebug({
                 step: 'unban_user_success',
                 user_id: user.id,
@@ -513,6 +506,7 @@
               })
 
               await runPage()
+              setStatus('تم فك الحظر', 'ok')
             } catch (err) {
               console.error(err)
               setStatus(extractErrorMessage(err), 'danger')
@@ -552,7 +546,6 @@
 
         const result = await createUserByAdmin(email, password, role)
 
-        setStatus(`تم إنشاء المستخدم بنجاح: ${email}`, 'ok')
         showDebug({
           step: 'create_user_success',
           result
@@ -563,6 +556,7 @@
         newRole.value = 'member'
 
         await runPage()
+        setStatus(`تم إنشاء المستخدم بنجاح: ${email}`, 'ok')
       } catch (err) {
         console.error(err)
         setStatus(extractErrorMessage(err), 'danger')
@@ -596,9 +590,7 @@
           return
         }
 
-        setStatus('تم التحقق من الأدمن بنجاح', 'ok')
         adminPanel.classList.remove('hidden')
-
         renderMe()
         await renderUsers()
       } catch (err) {
@@ -608,7 +600,10 @@
           step: 'error',
           message: extractErrorMessage(err)
         })
+        return
       }
+
+      setStatus('تم التحقق من الأدمن بنجاح', 'ok')
     }
 
     async function logout() {
