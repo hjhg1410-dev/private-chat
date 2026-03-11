@@ -16,6 +16,11 @@
       --danger:#ef4444;
       --ok:#10b981;
       --header:#1e293b;
+      --bubble-radius:12px;
+      --chat-font-size:15px;
+      --panel-bg:#111827;
+      --input-bg:#ffffff;
+      --input-text:#111827;
     }
 
     *{ box-sizing:border-box; }
@@ -28,6 +33,7 @@
       display:flex;
       flex-direction:column;
       height:100vh;
+      overflow:hidden;
     }
 
     header{
@@ -37,6 +43,7 @@
       font-size:18px;
       border-bottom:1px solid var(--border);
       position:relative;
+      flex-shrink:0;
     }
 
     .top-actions{
@@ -45,6 +52,7 @@
       top:10px;
       display:flex;
       gap:8px;
+      flex-wrap:wrap;
     }
 
     .top-btn{
@@ -66,6 +74,7 @@
       border-bottom:1px solid var(--border);
       background:#111827;
       color:var(--muted);
+      flex-shrink:0;
     }
 
     #messages{
@@ -75,16 +84,18 @@
       display:flex;
       flex-direction:column;
       gap:10px;
+      font-size:var(--chat-font-size);
     }
 
     .msg{
       max-width:78%;
       padding:10px 12px;
-      border-radius:12px;
+      border-radius:var(--bubble-radius);
       background:var(--other);
       align-self:flex-start;
       word-break:break-word;
       border:1px solid rgba(255,255,255,.04);
+      box-shadow:0 2px 10px rgba(0,0,0,.12);
     }
 
     .msg.mine{
@@ -111,6 +122,7 @@
       padding:10px;
       background:var(--card);
       border-top:1px solid var(--border);
+      flex-shrink:0;
     }
 
     input{
@@ -120,8 +132,8 @@
       border:none;
       outline:none;
       font-size:15px;
-      background:#fff;
-      color:#111827;
+      background:var(--input-bg);
+      color:var(--input-text);
     }
 
     button{
@@ -154,6 +166,115 @@
     .hidden{
       display:none !important;
     }
+
+    #settingsOverlay{
+      position:fixed;
+      inset:0;
+      background:rgba(0,0,0,.45);
+      display:none;
+      align-items:center;
+      justify-content:center;
+      padding:20px;
+      z-index:1000;
+    }
+
+    #settingsPanel{
+      width:min(520px,100%);
+      max-height:90vh;
+      overflow:auto;
+      background:var(--panel-bg);
+      border:1px solid var(--border);
+      border-radius:18px;
+      padding:20px;
+      box-shadow:0 20px 60px rgba(0,0,0,.35);
+    }
+
+    #settingsPanel h2{
+      margin-top:0;
+    }
+
+    .setting-group{
+      margin-bottom:18px;
+      padding-bottom:14px;
+      border-bottom:1px solid rgba(255,255,255,.08);
+    }
+
+    .setting-group:last-child{
+      border-bottom:none;
+    }
+
+    .setting-group label{
+      display:block;
+      margin-bottom:8px;
+      color:var(--muted);
+      font-size:14px;
+    }
+
+    .setting-group input,
+    .setting-group select{
+      width:100%;
+      padding:10px;
+      border-radius:10px;
+      border:1px solid var(--border);
+      background:#0b1220;
+      color:#fff;
+      outline:none;
+    }
+
+    .settings-actions{
+      display:grid;
+      grid-template-columns:1fr 1fr 1fr;
+      gap:10px;
+      margin-top:10px;
+    }
+
+    .preview-box{
+      display:flex;
+      flex-direction:column;
+      gap:8px;
+      margin-top:12px;
+      padding:12px;
+      border-radius:12px;
+      background:rgba(255,255,255,.03);
+      border:1px solid rgba(255,255,255,.06);
+    }
+
+    .preview-bubble{
+      max-width:80%;
+      padding:10px 12px;
+      border-radius:var(--bubble-radius);
+      font-size:var(--chat-font-size);
+    }
+
+    .preview-bubble.mine{
+      background:var(--mine);
+      align-self:flex-end;
+    }
+
+    .preview-bubble.other{
+      background:var(--other);
+      align-self:flex-start;
+    }
+
+    @media (max-width:700px){
+      .top-actions{
+        position:static;
+        justify-content:center;
+        margin-top:10px;
+      }
+
+      header{
+        padding-bottom:10px;
+      }
+
+      .settings-actions{
+        grid-template-columns:1fr;
+      }
+
+      .msg{
+        max-width:88%;
+      }
+    }
   </style>
 </head>
 <body>
@@ -161,6 +282,7 @@
   <header>
     الشات الخاص 🤍
     <div class="top-actions">
+      <button id="settingsBtn" class="top-btn">الإعدادات</button>
       <button id="adminBtn" class="top-btn hidden">لوحة الأدمن</button>
       <button id="logoutBtn" class="top-btn">خروج</button>
     </div>
@@ -182,12 +304,74 @@
     <button id="send">إرسال</button>
   </footer>
 
+  <div id="settingsOverlay">
+    <div id="settingsPanel">
+      <h2>إعدادات الشات</h2>
+
+      <div class="setting-group">
+        <label for="bgSelect">خلفية الشات</label>
+        <select id="bgSelect">
+          <option value="#0f172a">أزرق داكن</option>
+          <option value="#111827">رمادي داكن</option>
+          <option value="#0b1020">ليلي عميق</option>
+          <option value="#1f2937">رمادي مزرق</option>
+          <option value="#172554">كحلي</option>
+          <option value="#3f3f46">رصاصي</option>
+        </select>
+      </div>
+
+      <div class="setting-group">
+        <label for="mineColor">لون رسائلي</label>
+        <input id="mineColor" type="color" value="#2563eb" />
+      </div>
+
+      <div class="setting-group">
+        <label for="otherColor">لون رسائل الطرف الآخر</label>
+        <input id="otherColor" type="color" value="#1e293b" />
+      </div>
+
+      <div class="setting-group">
+        <label for="fontSize">حجم الخط</label>
+        <select id="fontSize">
+          <option value="14px">صغير</option>
+          <option value="15px" selected>متوسط</option>
+          <option value="16px">كبير</option>
+          <option value="18px">أكبر</option>
+        </select>
+      </div>
+
+      <div class="setting-group">
+        <label for="bubbleRadius">استدارة الفقاعات</label>
+        <select id="bubbleRadius">
+          <option value="8px">خفيفة</option>
+          <option value="12px" selected>متوسطة</option>
+          <option value="18px">ناعمة</option>
+          <option value="24px">مستديرة جدًا</option>
+        </select>
+      </div>
+
+      <div class="setting-group">
+        <label>معاينة</label>
+        <div class="preview-box">
+          <div class="preview-bubble other">هذه رسالة تجريبية من الطرف الآخر</div>
+          <div class="preview-bubble mine">وهذه رسالتك أنت</div>
+        </div>
+      </div>
+
+      <div class="settings-actions">
+        <button id="saveSettingsBtn">حفظ</button>
+        <button id="resetSettingsBtn" class="top-btn" style="width:100%;background:#475569;">إعادة الافتراضي</button>
+        <button id="closeSettingsBtn" class="top-btn" style="width:100%;background:#334155;">إغلاق</button>
+      </div>
+    </div>
+  </div>
+
 <script type="module">
   import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
   const supabase = createClient(
-        'https://vbwtsnxrshgjqmbgtagw.supabase.co',
-        'sb_publishable_esJOtB6hRNf48Uo61txcyg_9F3yolJO'
+    'https://vbwtsnxrshgjqmbgtagw.supabase.co',
+    'sb_publishable_esJOtB6hRNf48Uo61txcyg_9F3yolJO'
   )
 
   const messagesBox = document.getElementById('messages')
@@ -199,10 +383,30 @@
   const statusBar = document.getElementById('statusBar')
   const logoutBtn = document.getElementById('logoutBtn')
   const adminBtn = document.getElementById('adminBtn')
+  const settingsBtn = document.getElementById('settingsBtn')
+
+  const settingsOverlay = document.getElementById('settingsOverlay')
+  const bgSelect = document.getElementById('bgSelect')
+  const mineColor = document.getElementById('mineColor')
+  const otherColor = document.getElementById('otherColor')
+  const fontSize = document.getElementById('fontSize')
+  const bubbleRadius = document.getElementById('bubbleRadius')
+  const saveSettingsBtn = document.getElementById('saveSettingsBtn')
+  const resetSettingsBtn = document.getElementById('resetSettingsBtn')
+  const closeSettingsBtn = document.getElementById('closeSettingsBtn')
 
   let currentUser = null
   let currentRole = 'member'
   let currentEmail = ''
+  let renderedMessageIds = new Set()
+
+  const defaultSettings = {
+    bg: '#0f172a',
+    mine: '#2563eb',
+    other: '#1e293b',
+    fontSize: '15px',
+    bubbleRadius: '12px'
+  }
 
   function setStatus(text) {
     statusBar.textContent = text
@@ -231,6 +435,49 @@
   function getDisplayNameFromEmail(email) {
     if (!email) return 'مستخدم'
     return email.split('@')[0]
+  }
+
+  function isNearBottom() {
+    return messagesBox.scrollHeight - messagesBox.scrollTop - messagesBox.clientHeight < 120
+  }
+
+  function scrollToBottom() {
+    messagesBox.scrollTop = messagesBox.scrollHeight
+  }
+
+  function getChatSettings() {
+    try {
+      const saved = JSON.parse(localStorage.getItem('chat_settings_v1') || '{}')
+      return { ...defaultSettings, ...saved }
+    } catch {
+      return { ...defaultSettings }
+    }
+  }
+
+  function saveChatSettings(settings) {
+    localStorage.setItem('chat_settings_v1', JSON.stringify(settings))
+  }
+
+  function applyChatSettings(settings) {
+    document.documentElement.style.setProperty('--bg', settings.bg)
+    document.documentElement.style.setProperty('--mine', settings.mine)
+    document.documentElement.style.setProperty('--other', settings.other)
+    document.documentElement.style.setProperty('--chat-font-size', settings.fontSize)
+    document.documentElement.style.setProperty('--bubble-radius', settings.bubbleRadius)
+
+    bgSelect.value = settings.bg
+    mineColor.value = settings.mine
+    otherColor.value = settings.other
+    fontSize.value = settings.fontSize
+    bubbleRadius.value = settings.bubbleRadius
+  }
+
+  function openSettings() {
+    settingsOverlay.style.display = 'flex'
+  }
+
+  function closeSettings() {
+    settingsOverlay.style.display = 'none'
   }
 
   async function requireSession() {
@@ -266,11 +513,16 @@
     if (error) throw error
 
     messagesBox.innerHTML = ''
+    renderedMessageIds.clear()
+
     data.forEach(renderMessage)
-    messagesBox.scrollTop = messagesBox.scrollHeight
+    scrollToBottom()
   }
 
   function renderMessage(msg) {
+    if (msg?.id && renderedMessageIds.has(msg.id)) return
+    if (msg?.id) renderedMessageIds.add(msg.id)
+
     const div = document.createElement('div')
     div.className = 'msg'
     if (msg.user_id === currentUser.id) {
@@ -317,7 +569,7 @@
 
   async function initRealtime() {
     supabase
-      .channel('chat_messages_live_v2')
+      .channel('chat_messages_live_v3')
       .on(
         'postgres_changes',
         {
@@ -326,8 +578,11 @@
           table: 'chat_messages'
         },
         (payload) => {
+          const shouldScroll = isNearBottom()
           renderMessage(payload.new)
-          messagesBox.scrollTop = messagesBox.scrollHeight
+          if (shouldScroll) {
+            scrollToBottom()
+          }
         }
       )
       .subscribe()
@@ -338,8 +593,31 @@
     window.location.href = 'login.html'
   }
 
+  function handleSaveSettings() {
+    const settings = {
+      bg: bgSelect.value,
+      mine: mineColor.value,
+      other: otherColor.value,
+      fontSize: fontSize.value,
+      bubbleRadius: bubbleRadius.value
+    }
+
+    saveChatSettings(settings)
+    applyChatSettings(settings)
+    closeSettings()
+    setStatus(`تم حفظ الإعدادات | ${currentEmail} | الصلاحية: ${currentRole}`)
+  }
+
+  function handleResetSettings() {
+    saveChatSettings(defaultSettings)
+    applyChatSettings(defaultSettings)
+    setStatus(`تمت إعادة الإعدادات الافتراضية | ${currentEmail} | الصلاحية: ${currentRole}`)
+  }
+
   async function init() {
     try {
+      applyChatSettings(getChatSettings())
+
       currentUser = await requireSession()
       currentEmail = currentUser.email || ''
       currentRole = await getRole(currentUser.id)
@@ -367,6 +645,17 @@
   logoutBtn.addEventListener('click', logout)
   adminBtn.addEventListener('click', () => {
     window.location.href = 'admin.html'
+  })
+
+  settingsBtn.addEventListener('click', openSettings)
+  closeSettingsBtn.addEventListener('click', closeSettings)
+  saveSettingsBtn.addEventListener('click', handleSaveSettings)
+  resetSettingsBtn.addEventListener('click', handleResetSettings)
+
+  settingsOverlay.addEventListener('click', (e) => {
+    if (e.target === settingsOverlay) {
+      closeSettings()
+    }
   })
 
   init()
