@@ -116,6 +116,24 @@
       margin-top:6px;
     }
 
+    .msg .message-image{
+      display:block;
+      margin-top:8px;
+      max-width:min(320px, 100%);
+      max-height:340px;
+      border-radius:12px;
+      border:1px solid rgba(255,255,255,.08);
+      object-fit:cover;
+      cursor:pointer;
+      background:#0b1220;
+    }
+
+    .msg .image-placeholder{
+      margin-top:8px;
+      font-size:12px;
+      opacity:.8;
+    }
+
     footer{
       display:flex;
       gap:10px;
@@ -123,9 +141,10 @@
       background:var(--card);
       border-top:1px solid var(--border);
       flex-shrink:0;
+      align-items:center;
     }
 
-    input{
+    input[type="text"]{
       flex:1;
       padding:12px;
       border-radius:8px;
@@ -144,6 +163,26 @@
       border-radius:8px;
       cursor:pointer;
       font-size:15px;
+    }
+
+    .ghost-btn{
+      background:#334155;
+      width:auto;
+      white-space:nowrap;
+    }
+
+    #imageInput{
+      display:none;
+    }
+
+    #selectedImageBox{
+      display:none;
+      padding:8px 12px;
+      background:#111827;
+      border-top:1px solid var(--border);
+      font-size:13px;
+      color:var(--muted);
+      flex-shrink:0;
     }
 
     #loadingView{
@@ -256,6 +295,24 @@
       align-self:flex-start;
     }
 
+    #imageViewer{
+      position:fixed;
+      inset:0;
+      background:rgba(0,0,0,.88);
+      display:none;
+      align-items:center;
+      justify-content:center;
+      z-index:2000;
+      padding:20px;
+    }
+
+    #imageViewer img{
+      max-width:95vw;
+      max-height:90vh;
+      border-radius:14px;
+      box-shadow:0 20px 60px rgba(0,0,0,.5);
+    }
+
     @media (max-width:700px){
       .top-actions{
         position:static;
@@ -273,6 +330,14 @@
 
       .msg{
         max-width:88%;
+      }
+
+      footer{
+        flex-wrap:wrap;
+      }
+
+      .ghost-btn, button{
+        width:100%;
       }
     }
   </style>
@@ -297,10 +362,15 @@
     </div>
   </div>
 
+  <div id="selectedImageBox"></div>
+
   <div id="messages" class="hidden"></div>
 
   <footer id="chatFooter" class="hidden">
-    <input id="text" placeholder="اكتب رسالة..." />
+    <input id="text" type="text" placeholder="اكتب رسالة..." />
+    <input id="imageInput" type="file" accept="image/*" />
+    <button id="pickImageBtn" class="ghost-btn">اختيار صورة</button>
+    <button id="clearImageBtn" class="ghost-btn">إلغاء الصورة</button>
     <button id="send">إرسال</button>
   </footer>
 
@@ -366,6 +436,10 @@
     </div>
   </div>
 
+  <div id="imageViewer">
+    <img id="imageViewerImg" src="" alt="صورة" />
+  </div>
+
 <script type="module">
   import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
@@ -396,11 +470,20 @@
   const resetSettingsBtn = document.getElementById('resetSettingsBtn')
   const closeSettingsBtn = document.getElementById('closeSettingsBtn')
 
+  const imageInput = document.getElementById('imageInput')
+  const pickImageBtn = document.getElementById('pickImageBtn')
+  const clearImageBtn = document.getElementById('clearImageBtn')
+  const selectedImageBox = document.getElementById('selectedImageBox')
+
+  const imageViewer = document.getElementById('imageViewer')
+  const imageViewerImg = document.getElementById('imageViewerImg')
+
   let currentUser = null
   let currentRole = 'member'
   let currentEmail = ''
   let renderedMessageIds = new Set()
   let accountStatusTimer = null
+  let selectedImageFile = null
 
   const defaultSettings = {
     bg: '#0f172a',
@@ -488,6 +571,33 @@
     settingsOverlay.style.display = 'none'
   }
 
+  function openImageViewer(url) {
+    imageViewerImg.src = url
+    imageViewer.style.display = 'flex'
+  }
+
+  function closeImageViewer() {
+    imageViewerImg.src = ''
+    imageViewer.style.display = 'none'
+  }
+
+  function updateSelectedImageUI() {
+    if (!selectedImageFile) {
+      selectedImageBox.style.display = 'none'
+      selectedImageBox.textContent = ''
+      return
+    }
+
+    selectedImageBox.style.display = 'block'
+    selectedImageBox.textContent = `الصورة المختارة: ${selectedImageFile.name}`
+  }
+
+  function clearSelectedImage() {
+    selectedImageFile = null
+    imageInput.value = ''
+    updateSelectedImageUI()
+  }
+
   async function requireSession() {
     const { data, error } = await supabase.auth.getSession()
     if (error) throw error
@@ -538,6 +648,7 @@
       setStatus('الحساب محظور')
       input.disabled = true
       sendBtn.disabled = true
+      clearSelectedImage()
       closeSettings()
       throw new Error('الحساب محظور')
     }
@@ -554,10 +665,20 @@
     accountStatusTimer = setInterval(async () => {
       try {
         await enforceNotBanned()
-      } catch (err) {
+      } catch {
         clearInterval(accountStatusTimer)
       }
     }, 15000)
+  }
+
+  async function createSignedImageUrl(path) {
+    const { data, error } = await supabase
+      .storage
+      .from('chat')
+      .createSignedUrl(path, 3600)
+
+    if (error) throw error
+    return data?.signedUrl || ''
   }
 
   async function loadMessages() {
@@ -571,11 +692,14 @@
     messagesBox.innerHTML = ''
     renderedMessageIds.clear()
 
-    data.forEach(renderMessage)
+    for (const msg of data) {
+      await renderMessage(msg)
+    }
+
     scrollToBottom()
   }
 
-  function renderMessage(msg) {
+  async function renderMessage(msg) {
     if (msg?.id && renderedMessageIds.has(msg.id)) return
     if (msg?.id) renderedMessageIds.add(msg.id)
 
@@ -592,16 +716,58 @@
 
     div.innerHTML = `
       <div class="name">${escapeHtml(senderName)}</div>
-      <div>${escapeHtml(msg.content || '')}</div>
+      ${msg.content ? `<div>${escapeHtml(msg.content)}</div>` : ''}
+      <div class="image-placeholder hidden">جاري تحميل الصورة...</div>
       <div class="meta">${formatTime(msg.created_at)}</div>
     `
 
     messagesBox.appendChild(div)
+
+    if (msg.image_path) {
+      const placeholder = div.querySelector('.image-placeholder')
+      placeholder.classList.remove('hidden')
+
+      try {
+        const signedUrl = await createSignedImageUrl(msg.image_path)
+        const img = document.createElement('img')
+        img.className = 'message-image'
+        img.src = signedUrl
+        img.alt = 'صورة'
+        img.loading = 'lazy'
+        img.addEventListener('click', () => openImageViewer(signedUrl))
+        placeholder.replaceWith(img)
+      } catch {
+        placeholder.textContent = 'تعذر تحميل الصورة'
+      }
+    }
+  }
+
+  function sanitizeFileName(name) {
+    return name.replace(/[^\w.\-]+/g, '_')
+  }
+
+  async function uploadImage(file) {
+    const safeName = sanitizeFileName(file.name)
+    const filePath = `${currentUser.id}/${Date.now()}_${safeName}`
+
+    const { error } = await supabase
+      .storage
+      .from('chat')
+      .upload(filePath, file, {
+        cacheControl: '3600',
+        upsert: false,
+        contentType: file.type
+      })
+
+    if (error) throw error
+    return filePath
   }
 
   async function sendMessage() {
     const text = input.value.trim()
-    if (!text) return
+    const file = selectedImageFile
+
+    if (!text && !file) return
 
     try {
       await enforceNotBanned()
@@ -609,29 +775,54 @@
       return
     }
 
+    if (file) {
+      if (!file.type.startsWith('image/')) {
+        alert('الملف المختار ليس صورة')
+        return
+      }
+
+      if (file.size > 5 * 1024 * 1024) {
+        alert('حجم الصورة يجب أن يكون أقل من 5MB')
+        return
+      }
+    }
+
     sendBtn.disabled = true
+    pickImageBtn.disabled = true
+    clearImageBtn.disabled = true
 
     try {
+      let imagePath = null
+
+      if (file) {
+        imagePath = await uploadImage(file)
+      }
+
       const { error } = await supabase
         .from('chat_messages')
         .insert({
           user_id: currentUser.id,
-          content: text,
-          sender_name: getDisplayNameFromEmail(currentEmail)
+          content: text || null,
+          sender_name: getDisplayNameFromEmail(currentEmail),
+          image_path: imagePath
         })
 
       if (error) throw error
+
       input.value = ''
+      clearSelectedImage()
     } catch (err) {
       alert(err.message || 'تعذر إرسال الرسالة')
     } finally {
       sendBtn.disabled = false
+      pickImageBtn.disabled = false
+      clearImageBtn.disabled = false
     }
   }
 
   async function initRealtime() {
     supabase
-      .channel('chat_messages_live_v4')
+      .channel('chat_messages_live_v5')
       .on(
         'postgres_changes',
         {
@@ -639,9 +830,9 @@
           schema: 'public',
           table: 'chat_messages'
         },
-        (payload) => {
+        async (payload) => {
           const shouldScroll = isNearBottom()
-          renderMessage(payload.new)
+          await renderMessage(payload.new)
           if (shouldScroll) {
             scrollToBottom()
           }
@@ -707,11 +898,24 @@
   }
 
   sendBtn.addEventListener('click', sendMessage)
+
   input.addEventListener('keydown', (e) => {
     if (e.key === 'Enter') sendMessage()
   })
 
+  pickImageBtn.addEventListener('click', () => {
+    imageInput.click()
+  })
+
+  imageInput.addEventListener('change', () => {
+    selectedImageFile = imageInput.files?.[0] || null
+    updateSelectedImageUI()
+  })
+
+  clearImageBtn.addEventListener('click', clearSelectedImage)
+
   logoutBtn.addEventListener('click', logout)
+
   adminBtn.addEventListener('click', () => {
     window.location.href = 'admin.html'
   })
@@ -724,6 +928,12 @@
   settingsOverlay.addEventListener('click', (e) => {
     if (e.target === settingsOverlay) {
       closeSettings()
+    }
+  })
+
+  imageViewer.addEventListener('click', (e) => {
+    if (e.target === imageViewer || e.target === imageViewerImg) {
+      closeImageViewer()
     }
   })
 
