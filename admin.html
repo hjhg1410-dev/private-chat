@@ -1,336 +1,668 @@
-<!-- admin.html -->
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-<meta charset="UTF-8">
-<title>لوحة الأدمن</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>لوحة الأدمن</title>
+  <style>
+    :root{
+      --bg:#0f172a;
+      --card:#1e293b;
+      --text:#f8fafc;
+      --muted:#94a3b8;
+      --border:#334155;
+      --btn:#2563eb;
+      --btn2:#475569;
+      --danger:#ef4444;
+      --ok:#10b981;
+      --warn:#f59e0b;
+    }
 
-<style>
+    *{box-sizing:border-box}
 
-body{
-background:#0f172a;
-color:white;
-font-family:tahoma;
-padding:30px;
-}
+    body{
+      margin:0;
+      background:var(--bg);
+      color:var(--text);
+      font-family:Tahoma,sans-serif;
+      min-height:100vh;
+      padding:24px;
+    }
 
-.card{
-background:#1e293b;
-padding:20px;
-border-radius:12px;
-margin-bottom:20px;
-}
+    .wrap{
+      max-width:1100px;
+      margin:0 auto;
+    }
 
-button{
-padding:10px;
-margin-top:10px;
-border:none;
-border-radius:8px;
-cursor:pointer;
-color:white;
-}
+    .card{
+      background:var(--card);
+      border:1px solid var(--border);
+      border-radius:16px;
+      padding:20px;
+      margin-bottom:16px;
+    }
 
-.btn{
-background:#2563eb;
-}
+    h1,h2{
+      margin-top:0;
+    }
 
-.btn-danger{
-background:#ef4444;
-}
+    p{
+      color:var(--muted);
+      line-height:1.8;
+    }
 
-.btn-gray{
-background:#475569;
-}
+    .status{
+      padding:12px;
+      border-radius:12px;
+      margin-top:12px;
+      font-weight:bold;
+    }
 
-select{
-padding:8px;
-margin-top:10px;
-width:100%;
-background:#0b1220;
-color:white;
-border:1px solid #334155;
-border-radius:6px;
-}
+    .ok{
+      background:rgba(16,185,129,.15);
+      color:#86efac;
+      border:1px solid rgba(16,185,129,.3);
+    }
 
-.item{
-border:1px solid #334155;
-padding:15px;
-margin-top:10px;
-border-radius:10px;
-}
+    .warn{
+      background:rgba(245,158,11,.15);
+      color:#fcd34d;
+      border:1px solid rgba(245,158,11,.3);
+    }
 
-.badge{
-background:#334155;
-padding:3px 7px;
-border-radius:20px;
-font-size:12px;
-margin-right:5px;
-}
+    .danger{
+      background:rgba(239,68,68,.15);
+      color:#fca5a5;
+      border:1px solid rgba(239,68,68,.3);
+    }
 
-.badge-ban{
-background:#ef4444;
-}
+    button, select, input{
+      width:100%;
+      padding:12px;
+      border-radius:10px;
+      font-size:16px;
+      margin-top:10px;
+    }
 
-</style>
+    button{
+      border:none;
+      cursor:pointer;
+      color:#fff;
+      background:var(--btn);
+    }
+
+    input, select{
+      background:#0b1220;
+      color:#fff;
+      border:1px solid var(--border);
+      outline:none;
+    }
+
+    .secondary{
+      background:var(--btn2);
+    }
+
+    .danger-btn{
+      background:var(--danger);
+    }
+
+    .hidden{
+      display:none !important;
+    }
+
+    .item{
+      border:1px solid var(--border);
+      border-radius:14px;
+      padding:14px;
+      margin-top:12px;
+      background:rgba(15,23,42,.45);
+    }
+
+    .item-title{
+      font-weight:bold;
+      margin-bottom:8px;
+    }
+
+    .meta{
+      font-size:13px;
+      color:var(--muted);
+      line-height:1.8;
+    }
+
+    .badge{
+      display:inline-block;
+      padding:4px 8px;
+      border-radius:999px;
+      font-size:12px;
+      margin-left:6px;
+      background:rgba(255,255,255,.08);
+    }
+
+    .badge-banned{
+      background:rgba(239,68,68,.18);
+      color:#fecaca;
+      border:1px solid rgba(239,68,68,.3);
+    }
+
+    pre{
+      background:#020617;
+      color:#d1d5db;
+      padding:14px;
+      border-radius:12px;
+      overflow:auto;
+      white-space:pre-wrap;
+      word-break:break-word;
+      direction:ltr;
+      text-align:left;
+      border:1px solid var(--border);
+    }
+
+    .grid{
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:16px;
+    }
+
+    .btn-row-4{
+      display:grid;
+      grid-template-columns:1fr 1fr 1fr 1fr;
+      gap:10px;
+      margin-top:10px;
+    }
+
+    @media (max-width: 900px){
+      .grid, .btn-row-4{
+        grid-template-columns:1fr;
+      }
+    }
+  </style>
 </head>
-
-
 <body>
-
-<div class="card">
-
-<h2>لوحة الأدمن</h2>
-
-<button class="btn" id="reloadBtn">تحديث اللوحة</button>
-<button class="btn-gray" id="goChatBtn">الرجوع للشات</button>
-<button class="btn-danger" id="logoutBtn">تسجيل الخروج</button>
-
-</div>
-
-<div class="card">
-
-<h3>الحالة</h3>
-
-<div id="statusBox">جاري التحقق...</div>
-
-</div>
-
-<div class="card">
-
-<h3>المستخدمون</h3>
-
-<div id="usersList"></div>
-
-</div>
-
-
-<script type="module">
-
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
-
-const supabase = createClient(
-'https://vbwtsnxrshgjqmbgtagw.supabase.co',
-'sb_publishable_esJOtB6hRNf48Uo61txcyg_9F3yolJO'
-)
-
-const usersList=document.getElementById('usersList')
-const statusBox=document.getElementById('statusBox')
-
-let currentUser=null
-
-function setStatus(msg){
-statusBox.innerText=msg
-}
-
-async function requireSession(){
-
-const {data}=await supabase.auth.getSession()
-
-if(!data.session){
-
-location.href='login.html'
-throw new Error('no session')
-
-}
-
-return data.session.user
-
-}
-
-async function getRole(id){
-
-const {data}=await supabase
-.from('user_roles')
-.select('role')
-.eq('id',id)
-.single()
-
-return data.role
-
-}
-
-async function loadUsers(){
-
-const {data}=await supabase
-.from('admin_users_view')
-.select('*')
-
-return data
-
-}
-
-async function setUserRole(id,role){
-
-await supabase
-.from('user_roles')
-.update({role})
-.eq('id',id)
-
-}
-
-async function banUser(userId,ban){
-
-const {data,error}=await supabase.functions.invoke(
-'ban-user-by-admin',
-{
-body:{user_id:userId,ban}
-}
-)
-
-if(error)throw error
-
-return data
-
-}
-
-async function deleteUser(userId){
-
-const {data,error}=await supabase.functions.invoke(
-'delete-user-by-admin',
-{
-body:{user_id:userId}
-}
-)
-
-if(error)throw error
-
-return data
-
-}
-
-async function renderUsers(){
-
-usersList.innerHTML=''
-
-const users=await loadUsers()
-
-users.forEach(user=>{
-
-const banned=user.banned_until?true:false
-
-const div=document.createElement('div')
-div.className='item'
-
-div.innerHTML=`
-
-<div>
-
-<b>${user.email}</b>
-
-<span class="badge">${user.role}</span>
-
-${banned?'<span class="badge badge-ban">محظور</span>':''}
-
-</div>
-
-<div style="margin-top:10px">
-
-<select class="roleSelect">
-
-<option value="member" ${user.role==='member'?'selected':''}>member</option>
-<option value="admin" ${user.role==='admin'?'selected':''}>admin</option>
-
-</select>
-
-<button class="btn saveRole">حفظ الدور</button>
-
-<button class="btn-danger banUser">حظر</button>
-
-<button class="btn-gray unbanUser">فك الحظر</button>
-
-<button class="btn-danger deleteUser">حذف المستخدم</button>
-
-</div>
-
-`
-
-div.querySelector('.saveRole').onclick=async()=>{
-
-await setUserRole(user.id,div.querySelector('.roleSelect').value)
-
-setStatus('تم حفظ الدور')
-
-run()
-
-}
-
-div.querySelector('.banUser').onclick=async()=>{
-
-await banUser(user.id,true)
-
-setStatus('تم حظر المستخدم')
-
-run()
-
-}
-
-div.querySelector('.unbanUser').onclick=async()=>{
-
-await banUser(user.id,false)
-
-setStatus('تم فك الحظر')
-
-run()
-
-}
-
-div.querySelector('.deleteUser').onclick=async()=>{
-
-if(!confirm('هل أنت متأكد من حذف المستخدم؟'))return
-
-await deleteUser(user.id)
-
-setStatus('تم حذف المستخدم')
-
-run()
-
-}
-
-usersList.appendChild(div)
-
-})
-
-}
-
-async function run(){
-
-currentUser=await requireSession()
-
-const role=await getRole(currentUser.id)
-
-if(role!=='admin'){
-
-setStatus('ليس لديك صلاحية')
-
-return
-
-}
-
-await renderUsers()
-
-setStatus('تم تحميل لوحة الأدمن')
-
-}
-
-document.getElementById('reloadBtn').onclick=run
-
-document.getElementById('logoutBtn').onclick=async()=>{
-
-await supabase.auth.signOut()
-
-location.href='login.html'
-
-}
-
-document.getElementById('goChatBtn').onclick=()=>{
-
-location.href='chat.html'
-
-}
-
-run()
-
-</script>
-
+  <div class="wrap">
+    <div class="card">
+      <h1>لوحة الأدمن</h1>
+      <p>إدارة المستخدمين والأدوار وإنشاء حسابات جديدة.</p>
+      <button id="reloadBtn">تحديث اللوحة</button>
+      <button id="goChatBtn" class="secondary">الرجوع إلى الشات</button>
+      <button id="logoutBtn" class="danger-btn">تسجيل الخروج</button>
+    </div>
+
+    <div class="card">
+      <h2>الحالة الحالية</h2>
+      <div id="statusBox" class="status warn">جاري التحقق...</div>
+    </div>
+
+    <div class="card">
+      <h2>بيانات التطوير</h2>
+      <pre id="debugBox">جاهز...</pre>
+    </div>
+
+    <div id="notAdminBox" class="card hidden">
+      <h2>الدخول مرفوض</h2>
+      <div class="status danger">هذا الحساب ليس أدمن.</div>
+    </div>
+
+    <div id="adminPanel" class="hidden">
+      <div class="grid">
+        <div>
+          <div class="card">
+            <h2>الحساب الحالي</h2>
+            <div id="meBox"></div>
+          </div>
+
+          <div class="card">
+            <h2>إنشاء مستخدم جديد</h2>
+            <input id="newEmail" type="email" placeholder="user@example.com" />
+            <input id="newPassword" type="password" placeholder="كلمة المرور" />
+            <select id="newRole">
+              <option value="member">member</option>
+              <option value="admin">admin</option>
+            </select>
+            <button id="createUserBtn">إنشاء المستخدم</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <h2>المستخدمون</h2>
+          <div id="usersList"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script type="module">
+    import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+
+    const supabase = createClient(
+      'https://vbwtsnxrshgjqmbgtagw.supabase.co',
+      'sb_publishable_esJOtB6hRNf48Uo61txcyg_9F3yolJO'
+    )
+
+    const statusBox = document.getElementById('statusBox')
+    const debugBox = document.getElementById('debugBox')
+    const notAdminBox = document.getElementById('notAdminBox')
+    const adminPanel = document.getElementById('adminPanel')
+    const meBox = document.getElementById('meBox')
+    const usersList = document.getElementById('usersList')
+
+    const reloadBtn = document.getElementById('reloadBtn')
+    const goChatBtn = document.getElementById('goChatBtn')
+    const logoutBtn = document.getElementById('logoutBtn')
+
+    const newEmail = document.getElementById('newEmail')
+    const newPassword = document.getElementById('newPassword')
+    const newRole = document.getElementById('newRole')
+    const createUserBtn = document.getElementById('createUserBtn')
+
+    let currentUser = null
+    let currentRole = 'member'
+
+    function setStatus(text, type = 'warn') {
+      statusBox.className = `status ${type}`
+      statusBox.textContent = text
+    }
+
+    function showDebug(data) {
+      debugBox.textContent =
+        typeof data === 'string'
+          ? data
+          : JSON.stringify(data, null, 2)
+    }
+
+    function escapeHtml(str) {
+      return String(str)
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;')
+        .replaceAll('"', '&quot;')
+        .replaceAll("'", '&#039;')
+    }
+
+    function extractErrorMessage(err) {
+      if (!err) return 'حدث خطأ غير معروف'
+      if (typeof err === 'string') return err
+      if (err.message) return err.message
+      if (err.context?.json?.error) return err.context.json.error
+      if (err.context?.error) return err.context.error
+      try {
+        return JSON.stringify(err)
+      } catch {
+        return 'حدث خطأ غير معروف'
+      }
+    }
+
+    async function requireSession() {
+      const { data, error } = await supabase.auth.getSession()
+      if (error) throw error
+
+      const user = data.session?.user
+      if (!user || user.is_anonymous || !user.email) {
+        window.location.href = 'login.html'
+        throw new Error('لا توجد جلسة صالحة')
+      }
+
+      return user
+    }
+
+    async function getRole(userId) {
+      const { data, error } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('id', userId)
+        .maybeSingle()
+
+      if (error) throw error
+      return data?.role || 'member'
+    }
+
+    async function loadUsers() {
+      const { data, error } = await supabase
+        .from('admin_users_view')
+        .select('*')
+        .order('created_at', { ascending: true })
+
+      if (error) throw error
+      return data || []
+    }
+
+    async function setUserRole(userId, role) {
+      const { data: existing, error: existingError } = await supabase
+        .from('user_roles')
+        .select('id')
+        .eq('id', userId)
+        .maybeSingle()
+
+      if (existingError) throw existingError
+
+      if (existing) {
+        const { error } = await supabase
+          .from('user_roles')
+          .update({ role })
+          .eq('id', userId)
+
+        if (error) throw error
+      } else {
+        const { error } = await supabase
+          .from('user_roles')
+          .insert({ id: userId, role })
+
+        if (error) throw error
+      }
+    }
+
+    async function createUserByAdmin(email, password, role) {
+      const { data, error } = await supabase.functions.invoke('create-user-by-admin', {
+        body: { email, password }
+      })
+
+      if (error) throw error
+      if (data?.error) throw new Error(data.error)
+
+      const createdUserId = data?.user?.id
+      if (!createdUserId) {
+        throw new Error('تم إنشاء المستخدم لكن لم يصل id')
+      }
+
+      await setUserRole(createdUserId, role)
+      return data
+    }
+
+    async function banUserByAdmin(userId, ban) {
+      const { data, error } = await supabase.functions.invoke('ban-user-by-admin', {
+        body: {
+          user_id: userId,
+          ban
+        }
+      })
+
+      if (error) throw error
+      if (data?.error) throw new Error(data.error)
+      return data
+    }
+
+    async function deleteUserByAdmin(userId) {
+      const { data, error } = await supabase.functions.invoke('delete-user-by-admin', {
+        body: {
+          user_id: userId
+        }
+      })
+
+      if (error) throw error
+      if (data?.error) throw new Error(data.error)
+      return data
+    }
+
+    function renderMe() {
+      meBox.innerHTML = `
+        <div class="item">
+          <div class="item-title">
+            ${escapeHtml(currentUser.email || 'بدون إيميل')}
+            <span class="badge">${escapeHtml(currentRole)}</span>
+          </div>
+          <div class="meta">
+            id: ${escapeHtml(currentUser.id)}<br>
+            email: ${escapeHtml(currentUser.email || '')}<br>
+            last_sign_in_at: ${escapeHtml(currentUser.last_sign_in_at || '')}
+          </div>
+        </div>
+      `
+    }
+
+    async function renderUsers() {
+      const users = await loadUsers()
+
+      if (!users.length) {
+        usersList.innerHTML = `
+          <div class="item">
+            <div class="meta">لا يوجد مستخدمون.</div>
+          </div>
+        `
+        return
+      }
+
+      usersList.innerHTML = ''
+
+      users.forEach((user) => {
+        const item = document.createElement('div')
+        item.className = 'item'
+
+        const isMe = user.id === currentUser.id
+        const bannedUntil = user.banned_until || null
+        const isBanned = !!bannedUntil && String(bannedUntil) !== 'null'
+
+        item.innerHTML = `
+          <div class="item-title">
+            ${escapeHtml(user.email || 'بدون إيميل')}
+            <span class="badge">${escapeHtml(user.role)}</span>
+            ${isMe ? '<span class="badge">أنت</span>' : ''}
+            ${isBanned ? '<span class="badge badge-banned">محظور</span>' : ''}
+          </div>
+          <div class="meta">
+            id: ${escapeHtml(user.id)}<br>
+            created_at: ${escapeHtml(user.created_at || '')}<br>
+            last_sign_in_at: ${escapeHtml(user.last_sign_in_at || '')}<br>
+            banned_until: ${escapeHtml(String(bannedUntil || 'غير محظور'))}
+          </div>
+          <select class="roleSelect">
+            <option value="member" ${user.role === 'member' ? 'selected' : ''}>member</option>
+            <option value="admin" ${user.role === 'admin' ? 'selected' : ''}>admin</option>
+          </select>
+          <div class="btn-row-4">
+            <button class="saveRoleBtn">حفظ الدور</button>
+            <button class="banBtn danger-btn" ${isMe ? 'disabled' : ''}>حظر</button>
+            <button class="unbanBtn secondary" ${isMe ? 'disabled' : ''}>فك الحظر</button>
+            <button class="deleteBtn danger-btn" ${isMe ? 'disabled' : ''}>حذف المستخدم</button>
+          </div>
+        `
+
+        const roleSelect = item.querySelector('.roleSelect')
+        const saveRoleBtn = item.querySelector('.saveRoleBtn')
+        const banBtn = item.querySelector('.banBtn')
+        const unbanBtn = item.querySelector('.unbanBtn')
+        const deleteBtn = item.querySelector('.deleteBtn')
+
+        saveRoleBtn.addEventListener('click', async () => {
+          try {
+            saveRoleBtn.disabled = true
+            setStatus('جاري حفظ الدور...', 'warn')
+
+            await setUserRole(user.id, roleSelect.value)
+
+            await runPage()
+            setStatus('تم حفظ الدور بنجاح', 'ok')
+          } catch (err) {
+            console.error(err)
+            setStatus(extractErrorMessage(err), 'danger')
+          } finally {
+            saveRoleBtn.disabled = false
+          }
+        })
+
+        if (!isMe) {
+          banBtn.addEventListener('click', async () => {
+            try {
+              banBtn.disabled = true
+              setStatus('جاري حظر المستخدم...', 'warn')
+
+              const result = await banUserByAdmin(user.id, true)
+
+              showDebug({
+                step: 'ban_user_success',
+                user_id: user.id,
+                result
+              })
+
+              await runPage()
+              setStatus('تم حظر المستخدم', 'ok')
+            } catch (err) {
+              console.error(err)
+              setStatus(extractErrorMessage(err), 'danger')
+              showDebug({
+                step: 'ban_user_error',
+                message: extractErrorMessage(err)
+              })
+            } finally {
+              banBtn.disabled = false
+            }
+          })
+
+          unbanBtn.addEventListener('click', async () => {
+            try {
+              unbanBtn.disabled = true
+              setStatus('جاري فك الحظر...', 'warn')
+
+              const result = await banUserByAdmin(user.id, false)
+
+              showDebug({
+                step: 'unban_user_success',
+                user_id: user.id,
+                result
+              })
+
+              await runPage()
+              setStatus('تم فك الحظر', 'ok')
+            } catch (err) {
+              console.error(err)
+              setStatus(extractErrorMessage(err), 'danger')
+              showDebug({
+                step: 'unban_user_error',
+                message: extractErrorMessage(err)
+              })
+            } finally {
+              unbanBtn.disabled = false
+            }
+          })
+
+          deleteBtn.addEventListener('click', async () => {
+            const confirmDelete = window.confirm(`هل أنت متأكد من حذف المستخدم؟\n\n${user.email || user.id}\n\nهذا الإجراء نهائي.`)
+            if (!confirmDelete) return
+
+            try {
+              deleteBtn.disabled = true
+              setStatus('جاري حذف المستخدم...', 'warn')
+
+              const result = await deleteUserByAdmin(user.id)
+
+              showDebug({
+                step: 'delete_user_success',
+                user_id: user.id,
+                result
+              })
+
+              await runPage()
+              setStatus('تم حذف المستخدم', 'ok')
+            } catch (err) {
+              console.error(err)
+              setStatus(extractErrorMessage(err), 'danger')
+              showDebug({
+                step: 'delete_user_error',
+                message: extractErrorMessage(err)
+              })
+            } finally {
+              deleteBtn.disabled = false
+            }
+          })
+        }
+
+        usersList.appendChild(item)
+      })
+    }
+
+    async function handleCreateUser() {
+      const email = newEmail.value.trim().toLowerCase()
+      const password = newPassword.value.trim()
+      const role = newRole.value
+
+      if (!email || !password) {
+        setStatus('أدخل الإيميل وكلمة المرور', 'danger')
+        return
+      }
+
+      if (password.length < 8) {
+        setStatus('كلمة المرور يجب أن تكون 8 أحرف أو أكثر', 'danger')
+        return
+      }
+
+      createUserBtn.disabled = true
+
+      try {
+        setStatus('جاري إنشاء المستخدم...', 'warn')
+
+        const result = await createUserByAdmin(email, password, role)
+
+        showDebug({
+          step: 'create_user_success',
+          result
+        })
+
+        newEmail.value = ''
+        newPassword.value = ''
+        newRole.value = 'member'
+
+        await runPage()
+        setStatus(`تم إنشاء المستخدم بنجاح: ${email}`, 'ok')
+      } catch (err) {
+        console.error(err)
+        setStatus(extractErrorMessage(err), 'danger')
+        showDebug({
+          step: 'create_user_error',
+          message: extractErrorMessage(err)
+        })
+      } finally {
+        createUserBtn.disabled = false
+      }
+    }
+
+    async function runPage() {
+      notAdminBox.classList.add('hidden')
+      adminPanel.classList.add('hidden')
+      setStatus('جاري التحقق من الجلسة والصلاحية...', 'warn')
+
+      try {
+        currentUser = await requireSession()
+        currentRole = await getRole(currentUser.id)
+
+        showDebug({
+          step: 'admin_auth_check',
+          user: currentUser,
+          role: currentRole
+        })
+
+        if (currentRole !== 'admin') {
+          notAdminBox.classList.remove('hidden')
+          setStatus('هذا الحساب ليس أدمن', 'danger')
+          return
+        }
+
+        adminPanel.classList.remove('hidden')
+        renderMe()
+        await renderUsers()
+      } catch (err) {
+        console.error(err)
+        setStatus(extractErrorMessage(err), 'danger')
+        showDebug({
+          step: 'error',
+          message: extractErrorMessage(err)
+        })
+        return
+      }
+
+      setStatus('تم التحقق من الأدمن بنجاح', 'ok')
+    }
+
+    async function logout() {
+      await supabase.auth.signOut()
+      window.location.href = 'login.html'
+    }
+
+    reloadBtn.addEventListener('click', runPage)
+    goChatBtn.addEventListener('click', () => {
+      window.location.href = 'chat.html'
+    })
+    logoutBtn.addEventListener('click', logout)
+    createUserBtn.addEventListener('click', handleCreateUser)
+
+    runPage()
+  </script>
 </body>
 </html>
