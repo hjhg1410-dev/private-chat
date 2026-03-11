@@ -163,15 +163,21 @@
       gap:16px;
     }
 
-    .btn-row-4{
+    .btn-row-5{
       display:grid;
-      grid-template-columns:1fr 1fr 1fr 1fr;
+      grid-template-columns:1fr 1fr 1fr 1fr 1fr;
       gap:10px;
       margin-top:10px;
     }
 
+    @media (max-width: 1100px){
+      .btn-row-5{
+        grid-template-columns:1fr;
+      }
+    }
+
     @media (max-width: 900px){
-      .grid, .btn-row-4{
+      .grid{
         grid-template-columns:1fr;
       }
     }
@@ -392,6 +398,19 @@
       return data
     }
 
+    async function resetPasswordByAdmin(userId, password) {
+      const { data, error } = await supabase.functions.invoke('reset-password-by-admin', {
+        body: {
+          user_id: userId,
+          password
+        }
+      })
+
+      if (error) throw error
+      if (data?.error) throw new Error(data.error)
+      return data
+    }
+
     function renderMe() {
       meBox.innerHTML = `
         <div class="item">
@@ -447,11 +466,12 @@
             <option value="member" ${user.role === 'member' ? 'selected' : ''}>member</option>
             <option value="admin" ${user.role === 'admin' ? 'selected' : ''}>admin</option>
           </select>
-          <div class="btn-row-4">
+          <div class="btn-row-5">
             <button class="saveRoleBtn">حفظ الدور</button>
             <button class="banBtn danger-btn" ${isMe ? 'disabled' : ''}>حظر</button>
             <button class="unbanBtn secondary" ${isMe ? 'disabled' : ''}>فك الحظر</button>
             <button class="deleteBtn danger-btn" ${isMe ? 'disabled' : ''}>حذف المستخدم</button>
+            <button class="resetBtn secondary" ${isMe ? 'disabled' : ''}>تغيير كلمة المرور</button>
           </div>
         `
 
@@ -460,6 +480,7 @@
         const banBtn = item.querySelector('.banBtn')
         const unbanBtn = item.querySelector('.unbanBtn')
         const deleteBtn = item.querySelector('.deleteBtn')
+        const resetBtn = item.querySelector('.resetBtn')
 
         saveRoleBtn.addEventListener('click', async () => {
           try {
@@ -560,6 +581,44 @@
               })
             } finally {
               deleteBtn.disabled = false
+            }
+          })
+
+          resetBtn.addEventListener('click', async () => {
+            const newPassword = window.prompt(`أدخل كلمة المرور الجديدة للمستخدم:\n\n${user.email || user.id}`)
+
+            if (newPassword === null) return
+
+            const password = newPassword.trim()
+
+            if (password.length < 8) {
+              setStatus('كلمة المرور يجب أن تكون 8 أحرف أو أكثر', 'danger')
+              return
+            }
+
+            try {
+              resetBtn.disabled = true
+              setStatus('جاري تغيير كلمة المرور...', 'warn')
+
+              const result = await resetPasswordByAdmin(user.id, password)
+
+              showDebug({
+                step: 'reset_password_success',
+                user_id: user.id,
+                result
+              })
+
+              await runPage()
+              setStatus('تم تغيير كلمة المرور بنجاح', 'ok')
+            } catch (err) {
+              console.error(err)
+              setStatus(extractErrorMessage(err), 'danger')
+              showDebug({
+                step: 'reset_password_error',
+                message: extractErrorMessage(err)
+              })
+            } finally {
+              resetBtn.disabled = false
             }
           })
         }
