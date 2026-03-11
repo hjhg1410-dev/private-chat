@@ -292,7 +292,7 @@
 
   <div id="loadingView">
     <div class="state-box">
-      <h2>جاري التحميل</h2>
+      <h2 id="loadingTitle">جاري التحميل</h2>
       <p id="loadingText">لحظة من فضلك...</p>
     </div>
   </div>
@@ -379,6 +379,7 @@
   const sendBtn = document.getElementById('send')
   const chatFooter = document.getElementById('chatFooter')
   const loadingView = document.getElementById('loadingView')
+  const loadingTitle = document.getElementById('loadingTitle')
   const loadingText = document.getElementById('loadingText')
   const statusBar = document.getElementById('statusBar')
   const logoutBtn = document.getElementById('logoutBtn')
@@ -399,6 +400,7 @@
   let currentRole = 'member'
   let currentEmail = ''
   let renderedMessageIds = new Set()
+  let accountStatusTimer = null
 
   const defaultSettings = {
     bg: '#0f172a',
@@ -430,6 +432,12 @@
     loadingView.classList.add('hidden')
     messagesBox.classList.remove('hidden')
     chatFooter.classList.remove('hidden')
+  }
+
+  function hideChat() {
+    messagesBox.classList.add('hidden')
+    chatFooter.classList.add('hidden')
+    loadingView.classList.remove('hidden')
   }
 
   function getDisplayNameFromEmail(email) {
@@ -504,6 +512,54 @@
     return data?.role || 'member'
   }
 
+  async function getMyAccountStatus() {
+    const { data, error } = await supabase.rpc('get_my_account_status')
+    if (error) throw error
+
+    if (Array.isArray(data)) {
+      return data[0] || null
+    }
+
+    return data || null
+  }
+
+  function isCurrentlyBanned(statusRow) {
+    if (!statusRow || !statusRow.banned_until) return false
+    return new Date(statusRow.banned_until).getTime() > Date.now()
+  }
+
+  async function enforceNotBanned() {
+    const statusRow = await getMyAccountStatus()
+
+    if (isCurrentlyBanned(statusRow)) {
+      hideChat()
+      loadingTitle.textContent = 'تم منع الوصول'
+      loadingText.textContent = 'هذا الحساب محظور حاليًا ولا يمكنه استخدام الشات.'
+      setStatus('الحساب محظور')
+      input.disabled = true
+      sendBtn.disabled = true
+      closeSettings()
+      throw new Error('الحساب محظور')
+    }
+
+    input.disabled = false
+    sendBtn.disabled = false
+  }
+
+  function startAccountStatusWatcher() {
+    if (accountStatusTimer) {
+      clearInterval(accountStatusTimer)
+    }
+
+    accountStatusTimer = setInterval(async () => {
+      try {
+        await enforceNotBanned()
+      } catch (err) {
+        clearInterval(accountStatusTimer)
+      }
+    }, 15000)
+  }
+
   async function loadMessages() {
     const { data, error } = await supabase
       .from('chat_messages')
@@ -547,6 +603,12 @@
     const text = input.value.trim()
     if (!text) return
 
+    try {
+      await enforceNotBanned()
+    } catch {
+      return
+    }
+
     sendBtn.disabled = true
 
     try {
@@ -569,7 +631,7 @@
 
   async function initRealtime() {
     supabase
-      .channel('chat_messages_live_v3')
+      .channel('chat_messages_live_v4')
       .on(
         'postgres_changes',
         {
@@ -589,6 +651,9 @@
   }
 
   async function logout() {
+    if (accountStatusTimer) {
+      clearInterval(accountStatusTimer)
+    }
     await supabase.auth.signOut()
     window.location.href = 'login.html'
   }
@@ -622,6 +687,8 @@
       currentEmail = currentUser.email || ''
       currentRole = await getRole(currentUser.id)
 
+      await enforceNotBanned()
+
       setStatus(`تم تسجيل الدخول: ${currentEmail} | الصلاحية: ${currentRole}`)
 
       if (currentRole === 'admin') {
@@ -631,8 +698,10 @@
       showChat()
       await loadMessages()
       await initRealtime()
+      startAccountStatusWatcher()
     } catch (err) {
       console.error(err)
+      if (String(err.message || '').includes('محظور')) return
       loadingText.textContent = err.message || 'حدث خطأ'
     }
   }
