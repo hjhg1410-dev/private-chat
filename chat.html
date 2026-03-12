@@ -440,9 +440,18 @@ function escapeHtml(str) {
     .replaceAll("'", '&#039;');
 }
 
+function syncHeaderPosition() {
+  const vv = window.visualViewport;
+  const topOffset = vv ? vv.offsetTop : 0;
+  headerEl.style.transform = `translateY(${topOffset}px)`;
+}
+
 function syncLayoutHeights() {
+  syncHeaderPosition();
+
   const headerH = Math.ceil(headerEl.getBoundingClientRect().height);
   const composerH = Math.ceil(composerShell.getBoundingClientRect().height);
+
   root.style.setProperty('--header-total-h', `${headerH}px`);
   root.style.setProperty('--composer-total-h', `${composerH}px`);
 }
@@ -789,10 +798,12 @@ window.addEventListener('orientationchange', () => {
   setTimeout(syncLayoutHeights, 80);
 });
 window.visualViewport?.addEventListener('resize', syncLayoutHeights);
-
+window.visualViewport?.addEventListener('scroll', syncLayoutHeights);
+  
 renderMessages();
 syncLayoutHeights();
 </script>
 
 </body>
 </html>
+
