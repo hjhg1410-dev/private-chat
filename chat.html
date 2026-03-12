@@ -85,6 +85,23 @@
       flex-direction:column;
       gap:10px;
       font-size:var(--chat-font-size);
+      overscroll-behavior-y:contain;
+    }
+
+    .msg-wrap{
+      display:flex;
+      width:100%;
+      position:relative;
+      user-select:none;
+      touch-action:pan-y;
+    }
+
+    .msg-wrap.mine{
+      justify-content:flex-end;
+    }
+
+    .msg-wrap.other{
+      justify-content:flex-start;
     }
 
     .msg{
@@ -96,11 +113,57 @@
       word-break:break-word;
       border:1px solid rgba(255,255,255,.04);
       box-shadow:0 2px 10px rgba(0,0,0,.12);
+      position:relative;
+      z-index:2;
+      transform:translateX(0);
+      transition:transform .18s ease;
+      will-change:transform;
     }
 
     .msg.mine{
       background:var(--mine);
       align-self:flex-end;
+    }
+
+    .msg-wrap.swiping .msg{
+      transition:none;
+    }
+
+    .reply-swipe-indicator{
+      position:absolute;
+      top:50%;
+      transform:translateY(-50%) scale(.8);
+      width:34px;
+      height:34px;
+      border-radius:50%;
+      background:rgba(255,255,255,.12);
+      border:1px solid rgba(255,255,255,.08);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      font-size:16px;
+      opacity:0;
+      pointer-events:none;
+      transition:opacity .15s ease, transform .15s ease, background .15s ease;
+      z-index:1;
+    }
+
+    .msg-wrap.other .reply-swipe-indicator{
+      right:10px;
+    }
+
+    .msg-wrap.mine .reply-swipe-indicator{
+      left:10px;
+    }
+
+    .msg-wrap.show-indicator .reply-swipe-indicator{
+      opacity:1;
+      transform:translateY(-50%) scale(1);
+    }
+
+    .msg-wrap.reply-ready .reply-swipe-indicator{
+      background:rgba(37,99,235,.8);
+      transform:translateY(-50%) scale(1.08);
     }
 
     .msg .name{
@@ -145,6 +208,27 @@
       margin-top:8px;
       font-size:12px;
       opacity:.8;
+    }
+
+    .msg-reply-box{
+      margin-bottom:8px;
+      padding:8px 10px;
+      border-radius:10px;
+      background:rgba(255,255,255,.09);
+      border-right:3px solid rgba(255,255,255,.55);
+      font-size:12px;
+    }
+
+    .msg-reply-name{
+      font-weight:bold;
+      margin-bottom:4px;
+    }
+
+    .msg-reply-text{
+      opacity:.92;
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
     }
 
     footer{
@@ -202,6 +286,7 @@
       display:none;
     }
 
+    #replyPreviewBox,
     #attachmentPreviewBox{
       display:none;
       padding:8px 12px;
@@ -210,7 +295,8 @@
       flex-shrink:0;
     }
 
-    .attachment-chip{
+    .attachment-chip,
+    .reply-chip{
       display:flex;
       align-items:center;
       justify-content:space-between;
@@ -223,7 +309,8 @@
       font-size:13px;
     }
 
-    .attachment-chip .chip-main{
+    .attachment-chip .chip-main,
+    .reply-chip .chip-main{
       display:flex;
       align-items:center;
       gap:10px;
@@ -232,10 +319,12 @@
       flex:1;
     }
 
-    .attachment-chip .chip-text{
+    .attachment-chip .chip-text,
+    .reply-chip .chip-text{
       overflow:hidden;
       text-overflow:ellipsis;
       white-space:nowrap;
+      max-width:100%;
     }
 
     .attachment-chip audio{
@@ -243,7 +332,8 @@
       max-width:100%;
     }
 
-    .attachment-chip .remove{
+    .attachment-chip .remove,
+    .reply-chip .remove{
       background:transparent;
       border:none;
       color:#fff;
@@ -411,11 +501,13 @@
         width:100%;
       }
 
-      .attachment-chip{
+      .attachment-chip,
+      .reply-chip{
         align-items:flex-start;
       }
 
-      .attachment-chip .chip-main{
+      .attachment-chip .chip-main,
+      .reply-chip .chip-main{
         flex-direction:column;
         align-items:flex-start;
       }
@@ -442,6 +534,7 @@
     </div>
   </div>
 
+  <div id="replyPreviewBox"></div>
   <div id="attachmentPreviewBox"></div>
 
   <div id="messages" class="hidden"></div>
@@ -552,6 +645,7 @@
   const pickAttachmentBtn = document.getElementById('pickAttachmentBtn')
   const recordBtn = document.getElementById('recordBtn')
   const attachmentPreviewBox = document.getElementById('attachmentPreviewBox')
+  const replyPreviewBox = document.getElementById('replyPreviewBox')
   const mediaViewer = document.getElementById('mediaViewer')
 
   let currentUser = null
@@ -560,10 +654,15 @@
   let renderedMessageIds = new Set()
   let accountStatusTimer = null
   let selectedAttachmentFile = null
+  let selectedReplyMessageId = null
   let mediaRecorder = null
   let mediaStream = null
   let recordedChunks = []
   let isRecording = false
+  let realtimeChannel = null
+  let activeSwipe = null
+
+  const messageMap = new Map()
 
   const defaultSettings = {
     bg: '#0f172a',
@@ -572,6 +671,10 @@
     fontSize: '15px',
     bubbleRadius: '12px'
   }
+
+  const REPLY_SWIPE_THRESHOLD = 72
+  const REPLY_SWIPE_MAX = 96
+  const SWIPE_LOCK_THRESHOLD = 12
 
   function setStatus(text) {
     statusBar.textContent = text
@@ -667,6 +770,37 @@
     mediaViewer.style.display = 'none'
   }
 
+  function getAttachmentType(fileOrMime) {
+    const value = String(fileOrMime || '')
+    if (value.startsWith('image/')) return 'image'
+    if (value.startsWith('video/')) return 'video'
+    if (value.startsWith('audio/')) return 'audio'
+    return 'unknown'
+  }
+
+  function getAttachmentLabel(type) {
+    if (type === 'image') return '📷 صورة'
+    if (type === 'video') return '🎬 فيديو'
+    if (type === 'audio') return '🎵 صوت'
+    return '📎 مرفق'
+  }
+
+  function getMessagePreviewText(msg) {
+    if (!msg) return 'رسالة غير متوفرة'
+    if (msg.content && String(msg.content).trim()) {
+      return String(msg.content).trim()
+    }
+    if (msg.attachment_type) {
+      return getAttachmentLabel(msg.attachment_type)
+    }
+    return 'رسالة'
+  }
+
+  function getMessageSenderName(msg) {
+    if (!msg) return 'مستخدم'
+    return msg.user_id === currentUser?.id ? 'أنت' : (msg.sender_name || 'مستخدم')
+  }
+
   function updateAttachmentPreviewUI() {
     if (!selectedAttachmentFile) {
       attachmentPreviewBox.style.display = 'none'
@@ -696,10 +830,46 @@
     document.getElementById('removeAttachmentBtn').addEventListener('click', clearSelectedAttachment)
   }
 
+  function updateReplyPreviewUI() {
+    if (!selectedReplyMessageId) {
+      replyPreviewBox.style.display = 'none'
+      replyPreviewBox.innerHTML = ''
+      return
+    }
+
+    const msg = messageMap.get(selectedReplyMessageId)
+    const senderName = getMessageSenderName(msg)
+    const previewText = getMessagePreviewText(msg)
+
+    replyPreviewBox.style.display = 'block'
+    replyPreviewBox.innerHTML = `
+      <div class="reply-chip">
+        <div class="chip-main">
+          <span class="chip-text">الرد على: ${escapeHtml(senderName)} — ${escapeHtml(previewText)}</span>
+        </div>
+        <button class="remove" id="removeReplyBtn" title="إلغاء الرد">×</button>
+      </div>
+    `
+
+    document.getElementById('removeReplyBtn').addEventListener('click', clearReplySelection)
+  }
+
   function clearSelectedAttachment() {
     selectedAttachmentFile = null
     attachmentInput.value = ''
     updateAttachmentPreviewUI()
+  }
+
+  function clearReplySelection() {
+    selectedReplyMessageId = null
+    updateReplyPreviewUI()
+  }
+
+  function startReplyToMessage(messageId) {
+    if (!messageMap.has(messageId)) return
+    selectedReplyMessageId = messageId
+    updateReplyPreviewUI()
+    input.focus()
   }
 
   function stopMediaStreamTracks() {
@@ -807,6 +977,7 @@
       input.disabled = true
       sendBtn.disabled = true
       clearSelectedAttachment()
+      clearReplySelection()
       if (isRecording) stopRecording()
       closeSettings()
       throw new Error('الحساب محظور')
@@ -840,13 +1011,193 @@
     return data?.signedUrl || ''
   }
 
-  function getAttachmentType(fileOrMime) {
-    const value = String(fileOrMime || '')
-    if (value.startsWith('image/')) return 'image'
-    if (value.startsWith('video/')) return 'video'
-    if (value.startsWith('audio/')) return 'audio'
-    return 'unknown'
+  function sanitizeFileName(name) {
+    return name.replace(/[^\w.\-]+/g, '_')
   }
+
+  async function uploadAttachment(file) {
+    const safeName = sanitizeFileName(file.name)
+    const filePath = `${currentUser.id}/${Date.now()}_${safeName}`
+
+    const { error } = await supabase
+      .storage
+      .from('chat')
+      .upload(filePath, file, {
+        cacheControl: '3600',
+        upsert: false,
+        contentType: file.type
+      })
+
+    if (error) throw error
+    return filePath
+  }
+
+  function getClientPoint(event) {
+    if (event.touches?.length) {
+      return {
+        x: event.touches[0].clientX,
+        y: event.touches[0].clientY
+      }
+    }
+
+    if (event.changedTouches?.length) {
+      return {
+        x: event.changedTouches[0].clientX,
+        y: event.changedTouches[0].clientY
+      }
+    }
+
+    return {
+      x: event.clientX,
+      y: event.clientY
+    }
+  }
+
+  function resetSwipeVisuals(wrap, bubble) {
+    if (!wrap || !bubble) return
+    wrap.classList.remove('swiping', 'show-indicator', 'reply-ready')
+    bubble.style.transform = 'translateX(0px)'
+  }
+
+  function animateSwipeBack(wrap, bubble) {
+    if (!wrap || !bubble) return
+    wrap.classList.remove('swiping', 'reply-ready')
+    wrap.classList.add('show-indicator')
+    bubble.style.transition = 'transform .18s ease'
+    bubble.style.transform = 'translateX(0px)'
+    window.setTimeout(() => {
+      wrap.classList.remove('show-indicator')
+      bubble.style.transition = ''
+    }, 180)
+  }
+
+  function beginSwipe(event, wrap, bubble, msg) {
+    if (!msg?.id) return
+    if (event.button !== undefined && event.button !== 0) return
+
+    const target = event.target
+    if (
+      target.closest('audio') ||
+      target.closest('video') ||
+      target.closest('img') ||
+      target.closest('button') ||
+      target.closest('a') ||
+      target.closest('input') ||
+      target.closest('textarea')
+    ) {
+      return
+    }
+
+    const point = getClientPoint(event)
+    activeSwipe = {
+      wrap,
+      bubble,
+      msg,
+      startX: point.x,
+      startY: point.y,
+      deltaX: 0,
+      deltaY: 0,
+      locked: null,
+      pointerType: event.type.startsWith('mouse') ? 'mouse' : 'touch'
+    }
+
+    wrap.classList.add('show-indicator')
+  }
+
+  function moveSwipe(event) {
+    if (!activeSwipe) return
+
+    const point = getClientPoint(event)
+    activeSwipe.deltaX = point.x - activeSwipe.startX
+    activeSwipe.deltaY = point.y - activeSwipe.startY
+
+    if (activeSwipe.locked === null) {
+      if (
+        Math.abs(activeSwipe.deltaX) < SWIPE_LOCK_THRESHOLD &&
+        Math.abs(activeSwipe.deltaY) < SWIPE_LOCK_THRESHOLD
+      ) {
+        return
+      }
+
+      activeSwipe.locked =
+        Math.abs(activeSwipe.deltaX) > Math.abs(activeSwipe.deltaY)
+          ? 'horizontal'
+          : 'vertical'
+    }
+
+    if (activeSwipe.locked === 'vertical') {
+      activeSwipe.wrap.classList.remove('show-indicator', 'reply-ready')
+      return
+    }
+
+    const isMine = activeSwipe.msg.user_id === currentUser.id
+    let swipeDistance = 0
+
+    if (isMine) {
+      swipeDistance = Math.max(0, -activeSwipe.deltaX)
+      activeSwipe.bubble.style.transform = `translateX(${-Math.min(swipeDistance, REPLY_SWIPE_MAX)}px)`
+    } else {
+      swipeDistance = Math.max(0, activeSwipe.deltaX)
+      activeSwipe.bubble.style.transform = `translateX(${Math.min(swipeDistance, REPLY_SWIPE_MAX)}px)`
+    }
+
+    activeSwipe.wrap.classList.add('swiping', 'show-indicator')
+
+    if (swipeDistance >= REPLY_SWIPE_THRESHOLD) {
+      activeSwipe.wrap.classList.add('reply-ready')
+    } else {
+      activeSwipe.wrap.classList.remove('reply-ready')
+    }
+
+    if (event.cancelable) {
+      event.preventDefault()
+    }
+  }
+
+  function endSwipe() {
+    if (!activeSwipe) return
+
+    const { wrap, bubble, msg, locked } = activeSwipe
+    let didReply = false
+
+    if (locked === 'horizontal') {
+      const isMine = msg.user_id === currentUser.id
+      const swipeDistance = isMine
+        ? Math.max(0, -activeSwipe.deltaX)
+        : Math.max(0, activeSwipe.deltaX)
+
+      if (swipeDistance >= REPLY_SWIPE_THRESHOLD) {
+        startReplyToMessage(msg.id)
+        didReply = true
+      }
+    }
+
+    animateSwipeBack(wrap, bubble)
+
+    if (didReply) {
+      setStatus(`تم تحديد رسالة للرد | ${currentEmail} | الصلاحية: ${currentRole}`)
+    }
+
+    activeSwipe = null
+  }
+
+  function cancelSwipe() {
+    if (!activeSwipe) return
+    animateSwipeBack(activeSwipe.wrap, activeSwipe.bubble)
+    activeSwipe = null
+  }
+
+  function attachSwipeHandlers(wrap, bubble, msg) {
+    wrap.addEventListener('touchstart', (e) => beginSwipe(e, wrap, bubble, msg), { passive: true })
+    wrap.addEventListener('touchmove', moveSwipe, { passive: false })
+    wrap.addEventListener('touchend', endSwipe)
+    wrap.addEventListener('touchcancel', cancelSwipe)
+
+    wrap.addEventListener('mousedown', (e) => beginSwipe(e, wrap, bubble, msg))
+  }
+
+  document.addEventListener('mousemove', moveSwipe)
+  document.addEventListener('mouseup', endSwipe)
 
   async function loadMessages() {
     const { data, error } = await supabase
@@ -858,6 +1209,13 @@
 
     messagesBox.innerHTML = ''
     renderedMessageIds.clear()
+    messageMap.clear()
+
+    for (const msg of data) {
+      if (msg?.id != null) {
+        messageMap.set(msg.id, msg)
+      }
+    }
 
     for (const msg of data) {
       await renderMessage(msg)
@@ -866,32 +1224,61 @@
     scrollToBottom()
   }
 
+  function createReplyHtml(msg) {
+    if (!msg.reply_to_id) return ''
+
+    const repliedMsg = messageMap.get(msg.reply_to_id)
+    const repliedName = getMessageSenderName(repliedMsg)
+    const repliedText = getMessagePreviewText(repliedMsg)
+
+    return `
+      <div class="msg-reply-box">
+        <div class="msg-reply-name">${escapeHtml(repliedName)}</div>
+        <div class="msg-reply-text">${escapeHtml(repliedText)}</div>
+      </div>
+    `
+  }
+
   async function renderMessage(msg) {
     if (msg?.id && renderedMessageIds.has(msg.id)) return
-    if (msg?.id) renderedMessageIds.add(msg.id)
-
-    const div = document.createElement('div')
-    div.className = 'msg'
-    if (msg.user_id === currentUser.id) {
-      div.classList.add('mine')
+    if (msg?.id) {
+      renderedMessageIds.add(msg.id)
+      messageMap.set(msg.id, msg)
     }
 
-    const senderName =
-      msg.user_id === currentUser.id
-        ? 'أنت'
-        : (msg.sender_name || 'مستخدم')
+    const wrap = document.createElement('div')
+    wrap.className = 'msg-wrap'
+    wrap.dataset.messageId = String(msg.id || '')
+    wrap.classList.add(msg.user_id === currentUser.id ? 'mine' : 'other')
 
-    div.innerHTML = `
+    const bubble = document.createElement('div')
+    bubble.className = 'msg'
+    if (msg.user_id === currentUser.id) {
+      bubble.classList.add('mine')
+    }
+
+    const senderName = getMessageSenderName(msg)
+
+    bubble.innerHTML = `
       <div class="name">${escapeHtml(senderName)}</div>
+      ${createReplyHtml(msg)}
       ${msg.content ? `<div>${escapeHtml(msg.content)}</div>` : ''}
       <div class="attachment-placeholder hidden">جاري تحميل المرفق...</div>
       <div class="meta">${formatTime(msg.created_at)}</div>
     `
 
-    messagesBox.appendChild(div)
+    const indicator = document.createElement('div')
+    indicator.className = 'reply-swipe-indicator'
+    indicator.textContent = '↩'
+
+    wrap.appendChild(indicator)
+    wrap.appendChild(bubble)
+    messagesBox.appendChild(wrap)
+
+    attachSwipeHandlers(wrap, bubble, msg)
 
     if (msg.attachment_path && msg.attachment_type) {
-      const placeholder = div.querySelector('.attachment-placeholder')
+      const placeholder = bubble.querySelector('.attachment-placeholder')
       placeholder.classList.remove('hidden')
 
       try {
@@ -927,27 +1314,6 @@
         placeholder.textContent = 'تعذر تحميل المرفق'
       }
     }
-  }
-
-  function sanitizeFileName(name) {
-    return name.replace(/[^\w.\-]+/g, '_')
-  }
-
-  async function uploadAttachment(file) {
-    const safeName = sanitizeFileName(file.name)
-    const filePath = `${currentUser.id}/${Date.now()}_${safeName}`
-
-    const { error } = await supabase
-      .storage
-      .from('chat')
-      .upload(filePath, file, {
-        cacheControl: '3600',
-        upsert: false,
-        contentType: file.type
-      })
-
-    if (error) throw error
-    return filePath
   }
 
   async function sendMessage() {
@@ -988,20 +1354,24 @@
         attachmentPath = await uploadAttachment(file)
       }
 
+      const insertPayload = {
+        user_id: currentUser.id,
+        content: text || null,
+        sender_name: getDisplayNameFromEmail(currentEmail),
+        attachment_path: attachmentPath,
+        attachment_type: attachmentType,
+        reply_to_id: selectedReplyMessageId || null
+      }
+
       const { error } = await supabase
         .from('chat_messages')
-        .insert({
-          user_id: currentUser.id,
-          content: text || null,
-          sender_name: getDisplayNameFromEmail(currentEmail),
-          attachment_path: attachmentPath,
-          attachment_type: attachmentType
-        })
+        .insert(insertPayload)
 
       if (error) throw error
 
       input.value = ''
       clearSelectedAttachment()
+      clearReplySelection()
     } catch (err) {
       alert(err.message || 'تعذر إرسال الرسالة')
     } finally {
@@ -1012,8 +1382,12 @@
   }
 
   async function initRealtime() {
-    supabase
-      .channel('chat_messages_live_v7')
+    if (realtimeChannel) {
+      await supabase.removeChannel(realtimeChannel)
+    }
+
+    realtimeChannel = supabase
+      .channel('chat_messages_live_v9')
       .on(
         'postgres_changes',
         {
@@ -1040,6 +1414,7 @@
       stopRecording()
     }
     stopMediaStreamTracks()
+    clearReplySelection()
     await supabase.auth.signOut()
     window.location.href = 'login.html'
   }
