@@ -93,6 +93,7 @@ header{
   gap:10px;
   background:transparent;
   -webkit-overflow-scrolling:touch;
+  overscroll-behavior:contain;
 }
 
 .msg-wrap{
@@ -378,6 +379,7 @@ button.send-btn{
 </div>
 
 <script>
+const app = document.querySelector('.app');
 const messagesEl = document.getElementById('messages');
 const input = document.getElementById('text');
 const sendBtn = document.getElementById('sendBtn');
@@ -470,6 +472,9 @@ function renderMessages() {
 
 function openReplyPreview(msgId) {
   replyingToId = msgId;
+  editingId = null;
+  sendBtn.textContent = 'إرسال';
+
   const msg = getMsgById(msgId);
   const name = msg?.mine ? 'أنت' : 'الطرف الآخر';
   const text = buildReplyPreviewText(msg);
@@ -500,7 +505,6 @@ function openMenu(msg) {
   menuActions.innerHTML = '';
 
   const actions = [];
-
   actions.push({ label: 'نسخ', action: () => copyMessage(msg.id) });
 
   if (msg.mine) {
@@ -541,6 +545,7 @@ async function copyMessage(id) {
 function editMessage(id) {
   const msg = getMsgById(id);
   if (!msg || !msg.mine) return;
+
   editingId = id;
   replyingToId = null;
   replyPreview.classList.add('hidden');
@@ -705,6 +710,53 @@ function bindInteractions(wrap, msg) {
   });
 }
 
+/* -------------------------
+   FIX SAFARI KEYBOARD MODE
+------------------------- */
+
+function syncViewportHeight(){
+  const h = window.visualViewport
+    ? window.visualViewport.height
+    : window.innerHeight;
+
+  app.style.height = h + 'px';
+}
+
+function hideKeyboard(){
+  if (document.activeElement === input) {
+    input.blur();
+  }
+}
+
+window.addEventListener('resize', syncViewportHeight);
+window.visualViewport?.addEventListener('resize', syncViewportHeight);
+
+messagesEl.addEventListener('touchstart', (e) => {
+  if (document.activeElement === input) {
+    const target = e.target;
+    if (!target.closest('.msg') && !target.closest('.msg-wrap')) {
+      hideKeyboard();
+    }
+  }
+}, { passive:true });
+
+messagesEl.addEventListener('click', (e) => {
+  if (document.activeElement === input) {
+    const target = e.target;
+    if (!target.closest('.msg') && !target.closest('.msg-wrap')) {
+      hideKeyboard();
+    }
+  }
+});
+
+messagesEl.addEventListener('touchmove', function(){
+  if (document.activeElement === input) {
+    hideKeyboard();
+  }
+}, { passive:true });
+
+/* events */
+
 sendBtn.addEventListener('click', sendMessage);
 
 input.addEventListener('keydown', (e) => {
@@ -719,6 +771,7 @@ document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') closeMenu();
 });
 
+syncViewportHeight();
 renderMessages();
 </script>
 
