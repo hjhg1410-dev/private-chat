@@ -34,6 +34,7 @@ html,body{
   font-family:tahoma,sans-serif;
   color:var(--text);
   -webkit-text-size-adjust:100%;
+  overscroll-behavior:none;
 }
 
 body{
@@ -70,6 +71,7 @@ header{
   border-bottom:1px solid var(--border);
   padding-top:var(--safe-top);
   z-index:10;
+  flex-shrink:0;
 }
 
 .header-inner{
@@ -94,6 +96,7 @@ header{
   background:transparent;
   -webkit-overflow-scrolling:touch;
   overscroll-behavior:contain;
+  touch-action:pan-y;
 }
 
 .msg-wrap{
@@ -197,6 +200,7 @@ header{
   background:var(--footer);
   border-top:1px solid var(--border);
   padding-bottom:var(--safe-bottom);
+  flex-shrink:0;
 }
 
 .reply-preview{
@@ -379,7 +383,6 @@ button.send-btn{
 </div>
 
 <script>
-const app = document.querySelector('.app');
 const messagesEl = document.getElementById('messages');
 const input = document.getElementById('text');
 const sendBtn = document.getElementById('sendBtn');
@@ -470,6 +473,12 @@ function renderMessages() {
   messagesEl.scrollTop = messagesEl.scrollHeight;
 }
 
+function clearReplyPreview() {
+  replyingToId = null;
+  replyPreview.classList.add('hidden');
+  replyPreview.innerHTML = '';
+}
+
 function openReplyPreview(msgId) {
   replyingToId = msgId;
   editingId = null;
@@ -490,12 +499,7 @@ function openReplyPreview(msgId) {
     </div>
   `;
 
-  document.getElementById('closeReplyBtn').addEventListener('click', () => {
-    replyingToId = null;
-    replyPreview.classList.add('hidden');
-    replyPreview.innerHTML = '';
-  });
-
+  document.getElementById('closeReplyBtn').addEventListener('click', clearReplyPreview);
   input.focus();
 }
 
@@ -547,9 +551,7 @@ function editMessage(id) {
   if (!msg || !msg.mine) return;
 
   editingId = id;
-  replyingToId = null;
-  replyPreview.classList.add('hidden');
-  replyPreview.innerHTML = '';
+  clearReplyPreview();
   input.value = msg.text;
   input.focus();
   sendBtn.textContent = 'حفظ';
@@ -589,9 +591,7 @@ function sendMessage() {
   });
 
   input.value = '';
-  replyingToId = null;
-  replyPreview.classList.add('hidden');
-  replyPreview.innerHTML = '';
+  clearReplyPreview();
   renderMessages();
 }
 
@@ -710,53 +710,24 @@ function bindInteractions(wrap, msg) {
   });
 }
 
-/* -------------------------
-   FIX SAFARI KEYBOARD MODE
-------------------------- */
-
-function syncViewportHeight(){
-  const h = window.visualViewport
-    ? window.visualViewport.height
-    : window.innerHeight;
-
-  app.style.height = h + 'px';
-}
-
-function hideKeyboard(){
+/* keyboard behavior for all browsers */
+function hideKeyboard() {
   if (document.activeElement === input) {
     input.blur();
   }
 }
 
-window.addEventListener('resize', syncViewportHeight);
-window.visualViewport?.addEventListener('resize', syncViewportHeight);
+messagesEl.addEventListener('touchstart', hideKeyboard, { passive: true });
+messagesEl.addEventListener('click', hideKeyboard);
 
-messagesEl.addEventListener('touchstart', (e) => {
-  if (document.activeElement === input) {
-    const target = e.target;
-    if (!target.closest('.msg') && !target.closest('.msg-wrap')) {
-      hideKeyboard();
-    }
-  }
-}, { passive:true });
-
-messagesEl.addEventListener('click', (e) => {
-  if (document.activeElement === input) {
-    const target = e.target;
-    if (!target.closest('.msg') && !target.closest('.msg-wrap')) {
-      hideKeyboard();
-    }
-  }
+document.addEventListener('pointerdown', (e) => {
+  if (document.activeElement !== input) return;
+  if (e.target === input) return;
+  if (e.target.closest('.composer-shell')) return;
+  hideKeyboard();
 });
 
-messagesEl.addEventListener('touchmove', function(){
-  if (document.activeElement === input) {
-    hideKeyboard();
-  }
-}, { passive:true });
-
 /* events */
-
 sendBtn.addEventListener('click', sendMessage);
 
 input.addEventListener('keydown', (e) => {
@@ -771,7 +742,6 @@ document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') closeMenu();
 });
 
-syncViewportHeight();
 renderMessages();
 </script>
 
