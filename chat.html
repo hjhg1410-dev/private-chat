@@ -187,6 +187,17 @@
       line-height:1;
     }
 
+    .recording-btn{
+      background:#dc2626 !important;
+      animation:pulse 1s infinite;
+    }
+
+    @keyframes pulse{
+      0%{opacity:1}
+      50%{opacity:.65}
+      100%{opacity:1}
+    }
+
     #attachmentInput{
       display:none;
     }
@@ -212,6 +223,26 @@
       font-size:13px;
     }
 
+    .attachment-chip .chip-main{
+      display:flex;
+      align-items:center;
+      gap:10px;
+      flex-wrap:wrap;
+      min-width:0;
+      flex:1;
+    }
+
+    .attachment-chip .chip-text{
+      overflow:hidden;
+      text-overflow:ellipsis;
+      white-space:nowrap;
+    }
+
+    .attachment-chip audio{
+      width:220px;
+      max-width:100%;
+    }
+
     .attachment-chip .remove{
       background:transparent;
       border:none;
@@ -221,6 +252,7 @@
       width:auto;
       padding:0;
       margin:0;
+      min-width:auto;
     }
 
     #loadingView{
@@ -378,6 +410,15 @@
       .ghost-btn, button{
         width:100%;
       }
+
+      .attachment-chip{
+        align-items:flex-start;
+      }
+
+      .attachment-chip .chip-main{
+        flex-direction:column;
+        align-items:flex-start;
+      }
     }
   </style>
 </head>
@@ -409,6 +450,7 @@
     <input id="text" type="text" placeholder="اكتب رسالة..." />
     <input id="attachmentInput" type="file" accept="image/*,video/*,audio/*" />
     <button id="pickAttachmentBtn" class="ghost-btn" title="مرفق">📎</button>
+    <button id="recordBtn" class="ghost-btn" title="تسجيل صوت">🎙️</button>
     <button id="send">إرسال</button>
   </footer>
 
@@ -508,6 +550,7 @@
 
   const attachmentInput = document.getElementById('attachmentInput')
   const pickAttachmentBtn = document.getElementById('pickAttachmentBtn')
+  const recordBtn = document.getElementById('recordBtn')
   const attachmentPreviewBox = document.getElementById('attachmentPreviewBox')
   const mediaViewer = document.getElementById('mediaViewer')
 
@@ -517,6 +560,10 @@
   let renderedMessageIds = new Set()
   let accountStatusTimer = null
   let selectedAttachmentFile = null
+  let mediaRecorder = null
+  let mediaStream = null
+  let recordedChunks = []
+  let isRecording = false
 
   const defaultSettings = {
     bg: '#0f172a',
@@ -627,10 +674,21 @@
       return
     }
 
+    const type = getAttachmentType(selectedAttachmentFile.type)
+    let previewHtml = ''
+
+    if (type === 'audio') {
+      const audioUrl = URL.createObjectURL(selectedAttachmentFile)
+      previewHtml = `<audio controls src="${audioUrl}"></audio>`
+    }
+
     attachmentPreviewBox.style.display = 'block'
     attachmentPreviewBox.innerHTML = `
       <div class="attachment-chip">
-        <span>المرفق المختار: ${escapeHtml(selectedAttachmentFile.name)}</span>
+        <div class="chip-main">
+          <span class="chip-text">المرفق المختار: ${escapeHtml(selectedAttachmentFile.name)}</span>
+          ${previewHtml}
+        </div>
         <button class="remove" id="removeAttachmentBtn" title="إلغاء">×</button>
       </div>
     `
@@ -642,6 +700,60 @@
     selectedAttachmentFile = null
     attachmentInput.value = ''
     updateAttachmentPreviewUI()
+  }
+
+  function stopMediaStreamTracks() {
+    if (mediaStream) {
+      mediaStream.getTracks().forEach(track => track.stop())
+      mediaStream = null
+    }
+  }
+
+  async function startRecording() {
+    if (selectedAttachmentFile) {
+      alert('ألغِ المرفق الحالي أولًا قبل بدء التسجيل')
+      return
+    }
+
+    try {
+      mediaStream = await navigator.mediaDevices.getUserMedia({ audio: true })
+      mediaRecorder = new MediaRecorder(mediaStream)
+      recordedChunks = []
+
+      mediaRecorder.addEventListener('dataavailable', (event) => {
+        if (event.data && event.data.size > 0) {
+          recordedChunks.push(event.data)
+        }
+      })
+
+      mediaRecorder.addEventListener('stop', () => {
+        const mimeType = mediaRecorder.mimeType || 'audio/webm'
+        const extension = mimeType.includes('ogg') ? 'ogg' : 'webm'
+        const audioBlob = new Blob(recordedChunks, { type: mimeType })
+        const fileName = `recording_${Date.now()}.${extension}`
+        selectedAttachmentFile = new File([audioBlob], fileName, { type: mimeType })
+        updateAttachmentPreviewUI()
+        stopMediaStreamTracks()
+      })
+
+      mediaRecorder.start()
+      isRecording = true
+      recordBtn.textContent = '⏹️'
+      recordBtn.classList.add('recording-btn')
+      setStatus(`جاري تسجيل الصوت... | ${currentEmail} | الصلاحية: ${currentRole}`)
+    } catch (err) {
+      alert('تعذر الوصول إلى الميكروفون. تأكد من السماح للمتصفح باستخدامه.')
+      stopMediaStreamTracks()
+    }
+  }
+
+  function stopRecording() {
+    if (!mediaRecorder || !isRecording) return
+    mediaRecorder.stop()
+    isRecording = false
+    recordBtn.textContent = '🎙️'
+    recordBtn.classList.remove('recording-btn')
+    setStatus(`تم تجهيز التسجيل الصوتي | ${currentEmail} | الصلاحية: ${currentRole}`)
   }
 
   async function requireSession() {
@@ -695,6 +807,7 @@
       input.disabled = true
       sendBtn.disabled = true
       clearSelectedAttachment()
+      if (isRecording) stopRecording()
       closeSettings()
       throw new Error('الحساب محظور')
     }
@@ -866,6 +979,7 @@
 
     sendBtn.disabled = true
     pickAttachmentBtn.disabled = true
+    recordBtn.disabled = true
 
     try {
       let attachmentPath = null
@@ -893,12 +1007,13 @@
     } finally {
       sendBtn.disabled = false
       pickAttachmentBtn.disabled = false
+      recordBtn.disabled = false
     }
   }
 
   async function initRealtime() {
     supabase
-      .channel('chat_messages_live_v6')
+      .channel('chat_messages_live_v7')
       .on(
         'postgres_changes',
         {
@@ -921,6 +1036,10 @@
     if (accountStatusTimer) {
       clearInterval(accountStatusTimer)
     }
+    if (isRecording) {
+      stopRecording()
+    }
+    stopMediaStreamTracks()
     await supabase.auth.signOut()
     window.location.href = 'login.html'
   }
@@ -980,12 +1099,21 @@
   })
 
   pickAttachmentBtn.addEventListener('click', () => {
+    if (isRecording) return
     attachmentInput.click()
   })
 
   attachmentInput.addEventListener('change', () => {
     selectedAttachmentFile = attachmentInput.files?.[0] || null
     updateAttachmentPreviewUI()
+  })
+
+  recordBtn.addEventListener('click', async () => {
+    if (isRecording) {
+      stopRecording()
+    } else {
+      await startRecording()
+    }
   })
 
   logoutBtn.addEventListener('click', logout)
