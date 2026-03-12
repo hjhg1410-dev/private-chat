@@ -207,10 +207,15 @@ touch-action:pan-y;
 
 /* composer */
 .composer-shell{
-  background:var(--footer);
-  border-top:1px solid var(--border);
-  padding-bottom:var(--safe-bottom);
-  flex-shrink:0;
+position:fixed;
+left:0;
+right:0;
+bottom:0;
+z-index:50;
+
+background:var(--footer);
+border-top:1px solid var(--border);
+padding-bottom:var(--safe-bottom);
 }
 
 .reply-preview{
@@ -757,4 +762,5 @@ renderMessages();
 
 </body>
 </html>
+
 
