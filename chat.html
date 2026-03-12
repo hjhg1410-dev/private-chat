@@ -85,23 +85,8 @@
       flex-direction:column;
       gap:10px;
       font-size:var(--chat-font-size);
-      overscroll-behavior-y:contain;
-    }
-
-    .msg-wrap{
-      display:flex;
-      width:100%;
-      position:relative;
+      -webkit-user-select:none;
       user-select:none;
-      touch-action:pan-y;
-    }
-
-    .msg-wrap.mine{
-      justify-content:flex-end;
-    }
-
-    .msg-wrap.other{
-      justify-content:flex-start;
     }
 
     .msg{
@@ -114,10 +99,9 @@
       border:1px solid rgba(255,255,255,.04);
       box-shadow:0 2px 10px rgba(0,0,0,.12);
       position:relative;
-      z-index:2;
-      transform:translateX(0);
-      transition:transform .18s ease;
-      will-change:transform;
+      -webkit-user-select:none;
+      user-select:none;
+      -webkit-touch-callout:none;
     }
 
     .msg.mine{
@@ -125,45 +109,9 @@
       align-self:flex-end;
     }
 
-    .msg-wrap.swiping .msg{
-      transition:none;
-    }
-
-    .reply-swipe-indicator{
-      position:absolute;
-      top:50%;
-      transform:translateY(-50%) scale(.8);
-      width:34px;
-      height:34px;
-      border-radius:50%;
-      background:rgba(255,255,255,.12);
-      border:1px solid rgba(255,255,255,.08);
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      font-size:16px;
-      opacity:0;
-      pointer-events:none;
-      transition:opacity .15s ease, transform .15s ease, background .15s ease;
-      z-index:1;
-    }
-
-    .msg-wrap.other .reply-swipe-indicator{
-      right:10px;
-    }
-
-    .msg-wrap.mine .reply-swipe-indicator{
-      left:10px;
-    }
-
-    .msg-wrap.show-indicator .reply-swipe-indicator{
-      opacity:1;
-      transform:translateY(-50%) scale(1);
-    }
-
-    .msg-wrap.reply-ready .reply-swipe-indicator{
-      background:rgba(37,99,235,.8);
-      transform:translateY(-50%) scale(1.08);
+    .msg.pressed{
+      transform:scale(.985);
+      opacity:.96;
     }
 
     .msg .name{
@@ -171,12 +119,27 @@
       opacity:.9;
       margin-bottom:5px;
       font-weight:bold;
+      pointer-events:none;
+    }
+
+    .msg .content{
+      pointer-events:none;
     }
 
     .msg .meta{
       font-size:11px;
       opacity:.8;
       margin-top:6px;
+      display:flex;
+      gap:6px;
+      align-items:center;
+      flex-wrap:wrap;
+      pointer-events:none;
+    }
+
+    .msg .edited-badge{
+      font-size:11px;
+      opacity:.9;
     }
 
     .msg .attachment{
@@ -186,6 +149,7 @@
       border-radius:12px;
       border:1px solid rgba(255,255,255,.08);
       background:#0b1220;
+      pointer-events:auto;
     }
 
     .msg img.attachment{
@@ -208,6 +172,7 @@
       margin-top:8px;
       font-size:12px;
       opacity:.8;
+      pointer-events:none;
     }
 
     .msg-reply-box{
@@ -217,6 +182,7 @@
       background:rgba(255,255,255,.09);
       border-right:3px solid rgba(255,255,255,.55);
       font-size:12px;
+      pointer-events:none;
     }
 
     .msg-reply-name{
@@ -250,6 +216,7 @@
       font-size:15px;
       background:var(--input-bg);
       color:var(--input-text);
+      min-width:0;
     }
 
     button{
@@ -269,6 +236,7 @@
       min-width:52px;
       font-size:20px;
       line-height:1;
+      flex-shrink:0;
     }
 
     .recording-btn{
@@ -287,6 +255,7 @@
     }
 
     #replyPreviewBox,
+    #editPreviewBox,
     #attachmentPreviewBox{
       display:none;
       padding:8px 12px;
@@ -296,7 +265,8 @@
     }
 
     .attachment-chip,
-    .reply-chip{
+    .reply-chip,
+    .edit-chip{
       display:flex;
       align-items:center;
       justify-content:space-between;
@@ -310,7 +280,8 @@
     }
 
     .attachment-chip .chip-main,
-    .reply-chip .chip-main{
+    .reply-chip .chip-main,
+    .edit-chip .chip-main{
       display:flex;
       align-items:center;
       gap:10px;
@@ -320,7 +291,8 @@
     }
 
     .attachment-chip .chip-text,
-    .reply-chip .chip-text{
+    .reply-chip .chip-text,
+    .edit-chip .chip-text{
       overflow:hidden;
       text-overflow:ellipsis;
       white-space:nowrap;
@@ -333,7 +305,8 @@
     }
 
     .attachment-chip .remove,
-    .reply-chip .remove{
+    .reply-chip .remove,
+    .edit-chip .remove{
       background:transparent;
       border:none;
       color:#fff;
@@ -474,6 +447,46 @@
       box-shadow:0 20px 60px rgba(0,0,0,.5);
     }
 
+    #messageActionsOverlay{
+      position:fixed;
+      inset:0;
+      background:rgba(0,0,0,.18);
+      display:none;
+      z-index:3000;
+    }
+
+    #messageActionsMenu{
+      position:fixed;
+      display:none;
+      min-width:180px;
+      background:#0f172a;
+      border:1px solid var(--border);
+      border-radius:14px;
+      box-shadow:0 16px 40px rgba(0,0,0,.35);
+      overflow:hidden;
+      z-index:3100;
+    }
+
+    .message-action-item{
+      width:100%;
+      border:none;
+      background:transparent;
+      color:#fff;
+      text-align:right;
+      padding:12px 14px;
+      font-size:14px;
+      cursor:pointer;
+      border-radius:0;
+    }
+
+    .message-action-item:hover{
+      background:rgba(255,255,255,.06);
+    }
+
+    .message-action-item.danger{
+      color:#fecaca;
+    }
+
     @media (max-width:700px){
       .top-actions{
         position:static;
@@ -494,20 +507,22 @@
       }
 
       footer{
-        flex-wrap:wrap;
+        flex-wrap:nowrap;
       }
 
-      .ghost-btn, button{
-        width:100%;
+      .ghost-btn, #send{
+        width:auto;
       }
 
       .attachment-chip,
-      .reply-chip{
+      .reply-chip,
+      .edit-chip{
         align-items:flex-start;
       }
 
       .attachment-chip .chip-main,
-      .reply-chip .chip-main{
+      .reply-chip .chip-main,
+      .edit-chip .chip-main{
         flex-direction:column;
         align-items:flex-start;
       }
@@ -535,6 +550,7 @@
   </div>
 
   <div id="replyPreviewBox"></div>
+  <div id="editPreviewBox"></div>
   <div id="attachmentPreviewBox"></div>
 
   <div id="messages" class="hidden"></div>
@@ -611,6 +627,9 @@
 
   <div id="mediaViewer"></div>
 
+  <div id="messageActionsOverlay"></div>
+  <div id="messageActionsMenu"></div>
+
 <script type="module">
   import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
@@ -646,7 +665,10 @@
   const recordBtn = document.getElementById('recordBtn')
   const attachmentPreviewBox = document.getElementById('attachmentPreviewBox')
   const replyPreviewBox = document.getElementById('replyPreviewBox')
+  const editPreviewBox = document.getElementById('editPreviewBox')
   const mediaViewer = document.getElementById('mediaViewer')
+  const messageActionsOverlay = document.getElementById('messageActionsOverlay')
+  const messageActionsMenu = document.getElementById('messageActionsMenu')
 
   let currentUser = null
   let currentRole = 'member'
@@ -655,14 +677,21 @@
   let accountStatusTimer = null
   let selectedAttachmentFile = null
   let selectedReplyMessageId = null
+  let selectedEditMessageId = null
   let mediaRecorder = null
   let mediaStream = null
   let recordedChunks = []
   let isRecording = false
   let realtimeChannel = null
-  let activeSwipe = null
+  let activeActionMessageId = null
+  let longPressTimer = null
+  let longPressTriggered = false
+  let longPressTarget = null
+  let suppressClickUntil = 0
 
+  const LONG_PRESS_MS = 450
   const messageMap = new Map()
+  const messageElementMap = new Map()
 
   const defaultSettings = {
     bg: '#0f172a',
@@ -671,10 +700,6 @@
     fontSize: '15px',
     bubbleRadius: '12px'
   }
-
-  const REPLY_SWIPE_THRESHOLD = 72
-  const REPLY_SWIPE_MAX = 96
-  const SWIPE_LOCK_THRESHOLD = 12
 
   function setStatus(text) {
     statusBar.textContent = text
@@ -854,6 +879,29 @@
     document.getElementById('removeReplyBtn').addEventListener('click', clearReplySelection)
   }
 
+  function updateEditPreviewUI() {
+    if (!selectedEditMessageId) {
+      editPreviewBox.style.display = 'none'
+      editPreviewBox.innerHTML = ''
+      sendBtn.textContent = 'إرسال'
+      return
+    }
+
+    const msg = messageMap.get(selectedEditMessageId)
+    editPreviewBox.style.display = 'block'
+    editPreviewBox.innerHTML = `
+      <div class="edit-chip">
+        <div class="chip-main">
+          <span class="chip-text">جارٍ تعديل الرسالة: ${escapeHtml(getMessagePreviewText(msg))}</span>
+        </div>
+        <button class="remove" id="removeEditBtn" title="إلغاء التعديل">×</button>
+      </div>
+    `
+
+    sendBtn.textContent = 'حفظ'
+    document.getElementById('removeEditBtn').addEventListener('click', clearEditSelection)
+  }
+
   function clearSelectedAttachment() {
     selectedAttachmentFile = null
     attachmentInput.value = ''
@@ -865,11 +913,18 @@
     updateReplyPreviewUI()
   }
 
-  function startReplyToMessage(messageId) {
-    if (!messageMap.has(messageId)) return
-    selectedReplyMessageId = messageId
-    updateReplyPreviewUI()
-    input.focus()
+  function clearEditSelection(resetInput = true) {
+    selectedEditMessageId = null
+    updateEditPreviewUI()
+    if (resetInput) {
+      input.value = ''
+    }
+  }
+
+  function clearComposerModes(options = {}) {
+    const { keepInput = false } = options
+    clearReplySelection()
+    clearEditSelection(!keepInput)
   }
 
   function stopMediaStreamTracks() {
@@ -882,6 +937,11 @@
   async function startRecording() {
     if (selectedAttachmentFile) {
       alert('ألغِ المرفق الحالي أولًا قبل بدء التسجيل')
+      return
+    }
+
+    if (selectedEditMessageId) {
+      alert('لا يمكن تسجيل مرفق صوتي أثناء تعديل رسالة')
       return
     }
 
@@ -977,9 +1037,10 @@
       input.disabled = true
       sendBtn.disabled = true
       clearSelectedAttachment()
-      clearReplySelection()
+      clearComposerModes()
       if (isRecording) stopRecording()
       closeSettings()
+      closeMessageActions()
       throw new Error('الحساب محظور')
     }
 
@@ -1032,198 +1093,6 @@
     return filePath
   }
 
-  function getClientPoint(event) {
-    if (event.touches?.length) {
-      return {
-        x: event.touches[0].clientX,
-        y: event.touches[0].clientY
-      }
-    }
-
-    if (event.changedTouches?.length) {
-      return {
-        x: event.changedTouches[0].clientX,
-        y: event.changedTouches[0].clientY
-      }
-    }
-
-    return {
-      x: event.clientX,
-      y: event.clientY
-    }
-  }
-
-  function resetSwipeVisuals(wrap, bubble) {
-    if (!wrap || !bubble) return
-    wrap.classList.remove('swiping', 'show-indicator', 'reply-ready')
-    bubble.style.transform = 'translateX(0px)'
-  }
-
-  function animateSwipeBack(wrap, bubble) {
-    if (!wrap || !bubble) return
-    wrap.classList.remove('swiping', 'reply-ready')
-    wrap.classList.add('show-indicator')
-    bubble.style.transition = 'transform .18s ease'
-    bubble.style.transform = 'translateX(0px)'
-    window.setTimeout(() => {
-      wrap.classList.remove('show-indicator')
-      bubble.style.transition = ''
-    }, 180)
-  }
-
-  function beginSwipe(event, wrap, bubble, msg) {
-    if (!msg?.id) return
-    if (event.button !== undefined && event.button !== 0) return
-
-    const target = event.target
-    if (
-      target.closest('audio') ||
-      target.closest('video') ||
-      target.closest('img') ||
-      target.closest('button') ||
-      target.closest('a') ||
-      target.closest('input') ||
-      target.closest('textarea')
-    ) {
-      return
-    }
-
-    const point = getClientPoint(event)
-    activeSwipe = {
-      wrap,
-      bubble,
-      msg,
-      startX: point.x,
-      startY: point.y,
-      deltaX: 0,
-      deltaY: 0,
-      locked: null,
-      pointerType: event.type.startsWith('mouse') ? 'mouse' : 'touch'
-    }
-
-    wrap.classList.add('show-indicator')
-  }
-
-  function moveSwipe(event) {
-    if (!activeSwipe) return
-
-    const point = getClientPoint(event)
-    activeSwipe.deltaX = point.x - activeSwipe.startX
-    activeSwipe.deltaY = point.y - activeSwipe.startY
-
-    if (activeSwipe.locked === null) {
-      if (
-        Math.abs(activeSwipe.deltaX) < SWIPE_LOCK_THRESHOLD &&
-        Math.abs(activeSwipe.deltaY) < SWIPE_LOCK_THRESHOLD
-      ) {
-        return
-      }
-
-      activeSwipe.locked =
-        Math.abs(activeSwipe.deltaX) > Math.abs(activeSwipe.deltaY)
-          ? 'horizontal'
-          : 'vertical'
-    }
-
-    if (activeSwipe.locked === 'vertical') {
-      activeSwipe.wrap.classList.remove('show-indicator', 'reply-ready')
-      return
-    }
-
-    const isMine = activeSwipe.msg.user_id === currentUser.id
-    let swipeDistance = 0
-
-    if (isMine) {
-      swipeDistance = Math.max(0, -activeSwipe.deltaX)
-      activeSwipe.bubble.style.transform = `translateX(${-Math.min(swipeDistance, REPLY_SWIPE_MAX)}px)`
-    } else {
-      swipeDistance = Math.max(0, activeSwipe.deltaX)
-      activeSwipe.bubble.style.transform = `translateX(${Math.min(swipeDistance, REPLY_SWIPE_MAX)}px)`
-    }
-
-    activeSwipe.wrap.classList.add('swiping', 'show-indicator')
-
-    if (swipeDistance >= REPLY_SWIPE_THRESHOLD) {
-      activeSwipe.wrap.classList.add('reply-ready')
-    } else {
-      activeSwipe.wrap.classList.remove('reply-ready')
-    }
-
-    if (event.cancelable) {
-      event.preventDefault()
-    }
-  }
-
-  function endSwipe() {
-    if (!activeSwipe) return
-
-    const { wrap, bubble, msg, locked } = activeSwipe
-    let didReply = false
-
-    if (locked === 'horizontal') {
-      const isMine = msg.user_id === currentUser.id
-      const swipeDistance = isMine
-        ? Math.max(0, -activeSwipe.deltaX)
-        : Math.max(0, activeSwipe.deltaX)
-
-      if (swipeDistance >= REPLY_SWIPE_THRESHOLD) {
-        startReplyToMessage(msg.id)
-        didReply = true
-      }
-    }
-
-    animateSwipeBack(wrap, bubble)
-
-    if (didReply) {
-      setStatus(`تم تحديد رسالة للرد | ${currentEmail} | الصلاحية: ${currentRole}`)
-    }
-
-    activeSwipe = null
-  }
-
-  function cancelSwipe() {
-    if (!activeSwipe) return
-    animateSwipeBack(activeSwipe.wrap, activeSwipe.bubble)
-    activeSwipe = null
-  }
-
-  function attachSwipeHandlers(wrap, bubble, msg) {
-    wrap.addEventListener('touchstart', (e) => beginSwipe(e, wrap, bubble, msg), { passive: true })
-    wrap.addEventListener('touchmove', moveSwipe, { passive: false })
-    wrap.addEventListener('touchend', endSwipe)
-    wrap.addEventListener('touchcancel', cancelSwipe)
-
-    wrap.addEventListener('mousedown', (e) => beginSwipe(e, wrap, bubble, msg))
-  }
-
-  document.addEventListener('mousemove', moveSwipe)
-  document.addEventListener('mouseup', endSwipe)
-
-  async function loadMessages() {
-    const { data, error } = await supabase
-      .from('chat_messages')
-      .select('*')
-      .order('created_at', { ascending: true })
-
-    if (error) throw error
-
-    messagesBox.innerHTML = ''
-    renderedMessageIds.clear()
-    messageMap.clear()
-
-    for (const msg of data) {
-      if (msg?.id != null) {
-        messageMap.set(msg.id, msg)
-      }
-    }
-
-    for (const msg of data) {
-      await renderMessage(msg)
-    }
-
-    scrollToBottom()
-  }
-
   function createReplyHtml(msg) {
     if (!msg.reply_to_id) return ''
 
@@ -1239,86 +1108,473 @@
     `
   }
 
+  function buildMessageInnerHtml(msg) {
+    return `
+      <div class="name">${escapeHtml(getMessageSenderName(msg))}</div>
+      ${createReplyHtml(msg)}
+      ${msg.content ? `<div class="content">${escapeHtml(msg.content)}</div>` : ''}
+      <div class="attachment-placeholder hidden">جاري تحميل المرفق...</div>
+      <div class="meta">
+        <span>${formatTime(msg.created_at)}</span>
+        ${msg.updated_at ? '<span class="edited-badge">(تم التعديل)</span>' : ''}
+      </div>
+    `
+  }
+
+  function setPressedMessageElement(msgId, pressed) {
+    const bubble = messageElementMap.get(msgId)
+    if (!bubble) return
+    bubble.classList.toggle('pressed', pressed)
+  }
+
+  function clearLongPressTimer() {
+    if (longPressTimer) {
+      clearTimeout(longPressTimer)
+      longPressTimer = null
+    }
+  }
+
+  function closeMessageActions() {
+    activeActionMessageId = null
+    messageActionsOverlay.style.display = 'none'
+    messageActionsMenu.style.display = 'none'
+    messageActionsMenu.innerHTML = ''
+  }
+
+  function clampMenuPosition(x, y) {
+    const padding = 8
+    const rect = messageActionsMenu.getBoundingClientRect()
+
+    let left = x
+    let top = y
+
+    if (left + rect.width > window.innerWidth - padding) {
+      left = window.innerWidth - rect.width - padding
+    }
+
+    if (top + rect.height > window.innerHeight - padding) {
+      top = window.innerHeight - rect.height - padding
+    }
+
+    if (left < padding) left = padding
+    if (top < padding) top = padding
+
+    return { left, top }
+  }
+
+  function showMessageActions(messageId, anchorX, anchorY) {
+    const msg = messageMap.get(messageId)
+    if (!msg) return
+
+    const isMine = msg.user_id === currentUser.id
+    activeActionMessageId = messageId
+
+    const items = [
+      { key: 'reply', label: 'رد' },
+      { key: 'copy', label: 'نسخ' }
+    ]
+
+    if (isMine) {
+      items.push({ key: 'edit', label: 'تعديل' })
+      items.push({ key: 'delete', label: 'حذف', danger: true })
+    }
+
+    messageActionsMenu.innerHTML = items.map(item => `
+      <button
+        class="message-action-item ${item.danger ? 'danger' : ''}"
+        data-action="${item.key}"
+        data-message-id="${escapeHtml(String(messageId))}"
+      >
+        ${escapeHtml(item.label)}
+      </button>
+    `).join('')
+
+    messageActionsOverlay.style.display = 'block'
+    messageActionsMenu.style.display = 'block'
+    messageActionsMenu.style.left = '0px'
+    messageActionsMenu.style.top = '0px'
+
+    const pos = clampMenuPosition(anchorX, anchorY)
+    messageActionsMenu.style.left = `${pos.left}px`
+    messageActionsMenu.style.top = `${pos.top}px`
+  }
+
+  function getMessageActionAnchor(msgId) {
+    const bubble = messageElementMap.get(msgId)
+    if (!bubble) {
+      return { x: window.innerWidth / 2, y: window.innerHeight / 2 }
+    }
+
+    const rect = bubble.getBoundingClientRect()
+    return {
+      x: rect.left + Math.min(rect.width * 0.5, 120),
+      y: rect.top + Math.min(rect.height * 0.5, 90)
+    }
+  }
+
+  function getPointFromEvent(event) {
+    if (event.touches?.length) {
+      return {
+        x: event.touches[0].clientX,
+        y: event.touches[0].clientY
+      }
+    }
+
+    if (event.changedTouches?.length) {
+      return {
+        x: event.changedTouches[0].clientX,
+        y: event.changedTouches[0].clientY
+      }
+    }
+
+    return {
+      x: event.clientX || 0,
+      y: event.clientY || 0
+    }
+  }
+
+  function beginLongPress(event, msgId) {
+    const bubble = messageElementMap.get(msgId)
+    if (!bubble) return
+
+    const target = event.target
+    if (
+      target.closest('audio') ||
+      target.closest('video') ||
+      target.closest('img') ||
+      target.closest('button') ||
+      target.closest('a') ||
+      target.closest('input') ||
+      target.closest('textarea')
+    ) {
+      return
+    }
+
+    clearLongPressTimer()
+    longPressTriggered = false
+    longPressTarget = {
+      msgId,
+      point: getPointFromEvent(event)
+    }
+
+    setPressedMessageElement(msgId, true)
+
+    longPressTimer = setTimeout(() => {
+      longPressTriggered = true
+      suppressClickUntil = Date.now() + 600
+      setPressedMessageElement(msgId, false)
+      const anchor = getMessageActionAnchor(msgId)
+      showMessageActions(msgId, anchor.x, anchor.y)
+      if (navigator.vibrate) {
+        navigator.vibrate(20)
+      }
+    }, LONG_PRESS_MS)
+  }
+
+  function cancelLongPress() {
+    clearLongPressTimer()
+    if (longPressTarget?.msgId) {
+      setPressedMessageElement(longPressTarget.msgId, false)
+    }
+    longPressTarget = null
+  }
+
+  async function copyMessageText(messageId) {
+    const msg = messageMap.get(messageId)
+    if (!msg) return
+
+    const textToCopy = msg.content?.trim() || getAttachmentLabel(msg.attachment_type)
+    try {
+      await navigator.clipboard.writeText(textToCopy || '')
+      setStatus(`تم نسخ الرسالة | ${currentEmail} | الصلاحية: ${currentRole}`)
+    } catch {
+      alert('تعذر نسخ الرسالة')
+    }
+  }
+
+  function startReplyToMessage(messageId) {
+    if (!messageMap.has(messageId)) return
+    if (selectedEditMessageId) {
+      clearEditSelection()
+    }
+    selectedReplyMessageId = messageId
+    updateReplyPreviewUI()
+    input.focus()
+  }
+
+  function startEditMessage(messageId) {
+    const msg = messageMap.get(messageId)
+    if (!msg) return
+    if (msg.user_id !== currentUser.id) return
+    if (selectedAttachmentFile) {
+      clearSelectedAttachment()
+    }
+    clearReplySelection()
+    selectedEditMessageId = messageId
+    input.value = msg.content || ''
+    updateEditPreviewUI()
+    input.focus()
+  }
+
+  async function deleteMessage(messageId) {
+    const msg = messageMap.get(messageId)
+    if (!msg) return
+    if (msg.user_id !== currentUser.id) return
+
+    const ok = confirm('هل تريد حذف هذه الرسالة؟')
+    if (!ok) return
+
+    try {
+      const { error } = await supabase
+        .from('chat_messages')
+        .delete()
+        .eq('id', messageId)
+        .eq('user_id', currentUser.id)
+
+      if (error) throw error
+
+      if (selectedReplyMessageId === messageId) {
+        clearReplySelection()
+      }
+      if (selectedEditMessageId === messageId) {
+        clearEditSelection()
+      }
+
+      setStatus(`تم حذف الرسالة | ${currentEmail} | الصلاحية: ${currentRole}`)
+    } catch (err) {
+      alert(err.message || 'تعذر حذف الرسالة')
+    }
+  }
+
+  async function handleMessageAction(action, messageId) {
+    closeMessageActions()
+
+    if (action === 'reply') {
+      startReplyToMessage(messageId)
+      return
+    }
+
+    if (action === 'copy') {
+      await copyMessageText(messageId)
+      return
+    }
+
+    if (action === 'edit') {
+      startEditMessage(messageId)
+      return
+    }
+
+    if (action === 'delete') {
+      await deleteMessage(messageId)
+    }
+  }
+
+  async function loadMessages() {
+    const { data, error } = await supabase
+      .from('chat_messages')
+      .select('*')
+      .order('created_at', { ascending: true })
+
+    if (error) throw error
+
+    messagesBox.innerHTML = ''
+    renderedMessageIds.clear()
+    messageMap.clear()
+    messageElementMap.clear()
+
+    for (const msg of data) {
+      if (msg?.id != null) {
+        messageMap.set(msg.id, msg)
+      }
+    }
+
+    for (const msg of data) {
+      await renderMessage(msg)
+    }
+
+    scrollToBottom()
+  }
+
+  function bindMessageInteractions(msgId, bubble) {
+    bubble.addEventListener('touchstart', (e) => beginLongPress(e, msgId), { passive: true })
+    bubble.addEventListener('touchend', cancelLongPress)
+    bubble.addEventListener('touchcancel', cancelLongPress)
+    bubble.addEventListener('touchmove', cancelLongPress)
+
+    bubble.addEventListener('mousedown', (e) => {
+      if (e.button !== 0) return
+      beginLongPress(e, msgId)
+    })
+
+    bubble.addEventListener('mouseup', cancelLongPress)
+    bubble.addEventListener('mouseleave', cancelLongPress)
+
+    bubble.addEventListener('contextmenu', (e) => {
+      e.preventDefault()
+      cancelLongPress()
+      const point = getPointFromEvent(e)
+      showMessageActions(msgId, point.x, point.y)
+    })
+
+    bubble.addEventListener('click', (e) => {
+      if (Date.now() < suppressClickUntil) {
+        e.preventDefault()
+        e.stopPropagation()
+      }
+    })
+  }
+
+  async function loadAttachmentIntoBubble(msg, bubble) {
+    if (!(msg.attachment_path && msg.attachment_type)) return
+
+    const placeholder = bubble.querySelector('.attachment-placeholder')
+    if (!placeholder) return
+
+    placeholder.classList.remove('hidden')
+
+    try {
+      const signedUrl = await createSignedAttachmentUrl(msg.attachment_path)
+
+      if (msg.attachment_type === 'image') {
+        const img = document.createElement('img')
+        img.className = 'attachment'
+        img.src = signedUrl
+        img.alt = 'صورة'
+        img.loading = 'lazy'
+        img.addEventListener('click', () => openMediaViewer('image', signedUrl))
+        placeholder.replaceWith(img)
+      } else if (msg.attachment_type === 'video') {
+        const video = document.createElement('video')
+        video.className = 'attachment'
+        video.src = signedUrl
+        video.controls = true
+        video.preload = 'metadata'
+        video.addEventListener('click', () => openMediaViewer('video', signedUrl))
+        placeholder.replaceWith(video)
+      } else if (msg.attachment_type === 'audio') {
+        const audio = document.createElement('audio')
+        audio.className = 'attachment'
+        audio.src = signedUrl
+        audio.controls = true
+        audio.preload = 'metadata'
+        placeholder.replaceWith(audio)
+      } else {
+        placeholder.textContent = 'نوع مرفق غير مدعوم'
+      }
+    } catch {
+      placeholder.textContent = 'تعذر تحميل المرفق'
+    }
+  }
+
   async function renderMessage(msg) {
     if (msg?.id && renderedMessageIds.has(msg.id)) return
-    if (msg?.id) {
-      renderedMessageIds.add(msg.id)
-      messageMap.set(msg.id, msg)
-    }
+    if (msg?.id) renderedMessageIds.add(msg.id)
+    if (msg?.id) messageMap.set(msg.id, msg)
 
-    const wrap = document.createElement('div')
-    wrap.className = 'msg-wrap'
-    wrap.dataset.messageId = String(msg.id || '')
-    wrap.classList.add(msg.user_id === currentUser.id ? 'mine' : 'other')
-
-    const bubble = document.createElement('div')
-    bubble.className = 'msg'
+    const div = document.createElement('div')
+    div.className = 'msg'
+    div.dataset.messageId = String(msg.id || '')
     if (msg.user_id === currentUser.id) {
-      bubble.classList.add('mine')
+      div.classList.add('mine')
     }
 
-    const senderName = getMessageSenderName(msg)
+    div.innerHTML = buildMessageInnerHtml(msg)
+    messagesBox.appendChild(div)
 
-    bubble.innerHTML = `
-      <div class="name">${escapeHtml(senderName)}</div>
-      ${createReplyHtml(msg)}
-      ${msg.content ? `<div>${escapeHtml(msg.content)}</div>` : ''}
-      <div class="attachment-placeholder hidden">جاري تحميل المرفق...</div>
-      <div class="meta">${formatTime(msg.created_at)}</div>
-    `
+    if (msg?.id) {
+      messageElementMap.set(msg.id, div)
+      bindMessageInteractions(msg.id, div)
+    }
 
-    const indicator = document.createElement('div')
-    indicator.className = 'reply-swipe-indicator'
-    indicator.textContent = '↩'
+    await loadAttachmentIntoBubble(msg, div)
+  }
 
-    wrap.appendChild(indicator)
-    wrap.appendChild(bubble)
-    messagesBox.appendChild(wrap)
+  async function updateRenderedMessage(msg) {
+    if (!msg?.id) return
+    messageMap.set(msg.id, msg)
 
-    attachSwipeHandlers(wrap, bubble, msg)
+    const bubble = messageElementMap.get(msg.id)
+    if (!bubble) {
+      await renderMessage(msg)
+      return
+    }
 
-    if (msg.attachment_path && msg.attachment_type) {
+    const existingMedia = bubble.querySelector('.attachment')
+    bubble.innerHTML = buildMessageInnerHtml(msg)
+
+    if (existingMedia && msg.attachment_path && msg.attachment_type) {
       const placeholder = bubble.querySelector('.attachment-placeholder')
-      placeholder.classList.remove('hidden')
-
-      try {
-        const signedUrl = await createSignedAttachmentUrl(msg.attachment_path)
-
-        if (msg.attachment_type === 'image') {
-          const img = document.createElement('img')
-          img.className = 'attachment'
-          img.src = signedUrl
-          img.alt = 'صورة'
-          img.loading = 'lazy'
-          img.addEventListener('click', () => openMediaViewer('image', signedUrl))
-          placeholder.replaceWith(img)
-        } else if (msg.attachment_type === 'video') {
-          const video = document.createElement('video')
-          video.className = 'attachment'
-          video.src = signedUrl
-          video.controls = true
-          video.preload = 'metadata'
-          video.addEventListener('click', () => openMediaViewer('video', signedUrl))
-          placeholder.replaceWith(video)
-        } else if (msg.attachment_type === 'audio') {
-          const audio = document.createElement('audio')
-          audio.className = 'attachment'
-          audio.src = signedUrl
-          audio.controls = true
-          audio.preload = 'metadata'
-          placeholder.replaceWith(audio)
-        } else {
-          placeholder.textContent = 'نوع مرفق غير مدعوم'
-        }
-      } catch {
-        placeholder.textContent = 'تعذر تحميل المرفق'
+      if (placeholder) {
+        placeholder.replaceWith(existingMedia)
       }
+    } else {
+      await loadAttachmentIntoBubble(msg, bubble)
+    }
+  }
+
+  function removeRenderedMessage(messageId) {
+    const bubble = messageElementMap.get(messageId)
+    if (bubble) {
+      bubble.remove()
+    }
+
+    renderedMessageIds.delete(messageId)
+    messageElementMap.delete(messageId)
+    messageMap.delete(messageId)
+
+    if (selectedReplyMessageId === messageId) {
+      clearReplySelection()
+    }
+    if (selectedEditMessageId === messageId) {
+      clearEditSelection()
     }
   }
 
   async function sendMessage() {
     const text = input.value.trim()
     const file = selectedAttachmentFile
+
+    if (selectedEditMessageId) {
+      if (!text) {
+        alert('لا يمكن حفظ رسالة فارغة')
+        return
+      }
+
+      sendBtn.disabled = true
+      pickAttachmentBtn.disabled = true
+      recordBtn.disabled = true
+
+      try {
+        await enforceNotBanned()
+
+        const targetMsg = messageMap.get(selectedEditMessageId)
+        if (!targetMsg || targetMsg.user_id !== currentUser.id) {
+          throw new Error('لا يمكنك تعديل هذه الرسالة')
+        }
+
+        const { error } = await supabase
+          .from('chat_messages')
+          .update({
+            content: text
+          })
+          .eq('id', selectedEditMessageId)
+          .eq('user_id', currentUser.id)
+
+        if (error) throw error
+
+        input.value = ''
+        clearEditSelection(false)
+        setStatus(`تم تعديل الرسالة | ${currentEmail} | الصلاحية: ${currentRole}`)
+      } catch (err) {
+        alert(err.message || 'تعذر تعديل الرسالة')
+      } finally {
+        sendBtn.disabled = false
+        pickAttachmentBtn.disabled = false
+        recordBtn.disabled = false
+        updateEditPreviewUI()
+      }
+      return
+    }
 
     if (!text && !file) return
 
@@ -1354,18 +1610,16 @@
         attachmentPath = await uploadAttachment(file)
       }
 
-      const insertPayload = {
-        user_id: currentUser.id,
-        content: text || null,
-        sender_name: getDisplayNameFromEmail(currentEmail),
-        attachment_path: attachmentPath,
-        attachment_type: attachmentType,
-        reply_to_id: selectedReplyMessageId || null
-      }
-
       const { error } = await supabase
         .from('chat_messages')
-        .insert(insertPayload)
+        .insert({
+          user_id: currentUser.id,
+          content: text || null,
+          sender_name: getDisplayNameFromEmail(currentEmail),
+          attachment_path: attachmentPath,
+          attachment_type: attachmentType,
+          reply_to_id: selectedReplyMessageId || null
+        })
 
       if (error) throw error
 
@@ -1387,7 +1641,7 @@
     }
 
     realtimeChannel = supabase
-      .channel('chat_messages_live_v9')
+      .channel('chat_messages_live_v10')
       .on(
         'postgres_changes',
         {
@@ -1403,6 +1657,28 @@
           }
         }
       )
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'chat_messages'
+        },
+        async (payload) => {
+          await updateRenderedMessage(payload.new)
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'DELETE',
+          schema: 'public',
+          table: 'chat_messages'
+        },
+        async (payload) => {
+          removeRenderedMessage(payload.old.id)
+        }
+      )
       .subscribe()
   }
 
@@ -1414,7 +1690,8 @@
       stopRecording()
     }
     stopMediaStreamTracks()
-    clearReplySelection()
+    clearComposerModes()
+    closeMessageActions()
     await supabase.auth.signOut()
     window.location.href = 'login.html'
   }
@@ -1470,11 +1747,17 @@
   sendBtn.addEventListener('click', sendMessage)
 
   input.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') sendMessage()
+    if (e.key === 'Enter') {
+      sendMessage()
+    }
   })
 
   pickAttachmentBtn.addEventListener('click', () => {
     if (isRecording) return
+    if (selectedEditMessageId) {
+      alert('لا يمكن إرفاق ملف أثناء تعديل رسالة')
+      return
+    }
     attachmentInput.click()
   })
 
@@ -1510,6 +1793,27 @@
 
   mediaViewer.addEventListener('click', () => {
     closeMediaViewer()
+  })
+
+  messageActionsOverlay.addEventListener('click', closeMessageActions)
+
+  messageActionsMenu.addEventListener('click', async (e) => {
+    const btn = e.target.closest('.message-action-item')
+    if (!btn) return
+    const action = btn.dataset.action
+    const messageId = btn.dataset.messageId
+    await handleMessageAction(action, messageId)
+  })
+
+  document.addEventListener('scroll', closeMessageActions, true)
+  window.addEventListener('resize', closeMessageActions)
+
+  document.addEventListener('click', (e) => {
+    if (messageActionsMenu.style.display === 'block') {
+      if (!messageActionsMenu.contains(e.target) && e.target !== messageActionsOverlay) {
+        closeMessageActions()
+      }
+    }
   })
 
   init()
