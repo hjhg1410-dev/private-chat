@@ -23,9 +23,9 @@
       --input-text:#111827;
       --selected-message:#334155;
       --actionbar-h:58px;
-      --app-height:100dvh;
       --safe-top:env(safe-area-inset-top, 0px);
       --safe-bottom:env(safe-area-inset-bottom, 0px);
+      --vh:1vh;
     }
 
     *{ box-sizing:border-box; }
@@ -40,19 +40,20 @@
       overflow:hidden;
     }
 
-    html{
-      height:-webkit-fill-available;
-    }
-
     body{
       font-family:tahoma,sans-serif;
       background:var(--bg);
       color:var(--text);
-      display:grid;
-      grid-template-rows:auto auto auto auto auto minmax(0, 1fr) auto;
-      height:var(--app-height);
-      min-height:var(--app-height);
-      max-height:var(--app-height);
+    }
+
+    #appShell{
+      height:calc(var(--vh) * 100);
+      min-height:calc(var(--vh) * 100);
+      max-height:calc(var(--vh) * 100);
+      display:flex;
+      flex-direction:column;
+      overflow:hidden;
+      background:var(--bg);
     }
 
     header{
@@ -92,10 +93,10 @@
       align-items:center;
       justify-content:space-between;
       gap:10px;
-      min-height:calc(var(--actionbar-h) + var(--safe-top));
+      min-height:var(--actionbar-h);
       background:var(--header);
       border-bottom:1px solid var(--border);
-      padding:calc(8px + var(--safe-top)) 12px 8px;
+      padding:8px 12px;
       flex-shrink:0;
       z-index:30;
       min-width:0;
@@ -160,13 +161,40 @@
       background:#111827;
       color:var(--muted);
       flex-shrink:0;
-      min-width:0;
+      white-space:nowrap;
       overflow:hidden;
       text-overflow:ellipsis;
-      white-space:nowrap;
+    }
+
+    #loadingView{
+      flex:1;
+      min-height:0;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:24px;
+      overflow:auto;
+    }
+
+    .state-box{
+      width:min(560px,100%);
+      background:var(--card);
+      border:1px solid var(--border);
+      border-radius:16px;
+      padding:24px;
+      text-align:center;
+    }
+
+    #chatMain{
+      flex:1;
+      min-height:0;
+      display:flex;
+      flex-direction:column;
+      overflow:hidden;
     }
 
     #messages{
+      flex:1;
       min-height:0;
       min-width:0;
       overflow:auto;
@@ -179,19 +207,18 @@
       user-select:none;
       -webkit-touch-callout:none;
       touch-action:pan-y;
-      overscroll-behavior:contain;
       -webkit-overflow-scrolling:touch;
+      overscroll-behavior:contain;
     }
 
     .msg{
+      max-width:min(78%, 420px, calc(100% - 12px));
       width:fit-content;
       min-width:0;
-      max-width:min(78%, calc(100vw - 40px));
       padding:10px 12px;
       border-radius:var(--bubble-radius);
       background:var(--other);
       align-self:flex-start;
-      overflow:hidden;
       overflow-wrap:anywhere;
       word-break:break-word;
       border:1px solid rgba(255,255,255,.04);
@@ -242,6 +269,7 @@
       white-space:pre-wrap;
       overflow-wrap:anywhere;
       word-break:break-word;
+      line-height:1.5;
     }
 
     .msg .meta{
@@ -267,7 +295,6 @@
     .msg .attachment{
       display:block;
       margin-top:8px;
-      width:auto;
       max-width:100%;
       border-radius:12px;
       border:1px solid rgba(255,255,255,.08);
@@ -296,8 +323,6 @@
       font-size:12px;
       opacity:.8;
       pointer-events:none;
-      min-width:0;
-      max-width:100%;
     }
 
     .msg-reply-box{
@@ -312,7 +337,6 @@
       user-select:none;
       min-width:0;
       max-width:100%;
-      overflow:hidden;
     }
 
     .msg-reply-name{
@@ -334,23 +358,39 @@
       max-width:100%;
     }
 
+    #composerArea{
+      flex-shrink:0;
+      display:flex;
+      flex-direction:column;
+      background:var(--card);
+      border-top:1px solid var(--border);
+      padding-bottom:var(--safe-bottom);
+    }
+
+    #replyPreviewBox,
+    #editPreviewBox,
+    #attachmentPreviewBox{
+      display:none;
+      padding:8px 12px;
+      background:#111827;
+      border-top:1px solid var(--border);
+      flex-shrink:0;
+    }
+
     footer{
       display:flex;
       gap:10px;
-      padding:10px 10px calc(10px + var(--safe-bottom));
+      padding:10px;
       background:var(--card);
-      border-top:1px solid var(--border);
       flex-shrink:0;
       align-items:center;
       flex-wrap:nowrap;
       min-width:0;
-      z-index:20;
     }
 
     input[type="text"]{
       flex:1;
       min-width:0;
-      width:100%;
       padding:12px;
       border-radius:8px;
       border:none;
@@ -395,17 +435,6 @@
       display:none;
     }
 
-    #replyPreviewBox,
-    #editPreviewBox,
-    #attachmentPreviewBox{
-      display:none;
-      padding:8px 12px;
-      background:#111827;
-      border-top:1px solid var(--border);
-      flex-shrink:0;
-      min-width:0;
-    }
-
     .attachment-chip,
     .reply-chip,
     .edit-chip{
@@ -420,7 +449,6 @@
       color:var(--muted);
       font-size:13px;
       min-width:0;
-      overflow:hidden;
     }
 
     .attachment-chip .chip-main,
@@ -461,25 +489,6 @@
       padding:0;
       margin:0;
       min-width:auto;
-      flex-shrink:0;
-    }
-
-    #loadingView{
-      min-height:0;
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      padding:24px;
-      overflow:auto;
-    }
-
-    .state-box{
-      width:min(560px,100%);
-      background:var(--card);
-      border:1px solid var(--border);
-      border-radius:16px;
-      padding:24px;
-      text-align:center;
     }
 
     .hidden{
@@ -556,12 +565,10 @@
       border-radius:12px;
       background:rgba(255,255,255,.03);
       border:1px solid rgba(255,255,255,.06);
-      min-width:0;
     }
 
     .preview-bubble{
       max-width:80%;
-      min-width:0;
       padding:10px 12px;
       border-radius:var(--bubble-radius);
       font-size:var(--chat-font-size);
@@ -599,10 +606,6 @@
     }
 
     @media (max-width:700px){
-      body{
-        grid-template-rows:auto auto auto auto auto minmax(0, 1fr) auto;
-      }
-
       .top-actions{
         position:static;
         justify-content:center;
@@ -623,12 +626,11 @@
       }
 
       .msg{
-        max-width:min(90%, calc(100vw - 20px));
+        max-width:min(88%, calc(100% - 8px));
       }
 
       footer{
         gap:8px;
-        padding-inline:8px;
       }
 
       .ghost-btn, #send{
@@ -656,66 +658,65 @@
         padding:10px 10px;
         font-size:13px;
       }
-
-      #statusBar{
-        font-size:13px;
-        padding:9px 10px;
-      }
-
-      input[type="text"]{
-        padding:11px 10px;
-      }
     }
   </style>
 </head>
 <body>
 
-  <header id="mainHeader">
-    الشات الخاص 🤍
-    <div class="top-actions">
-      <button id="settingsBtn" class="top-btn">الإعدادات</button>
-      <button id="adminBtn" class="top-btn hidden">لوحة الأدمن</button>
-      <button id="logoutBtn" class="top-btn">خروج</button>
-    </div>
-  </header>
+  <div id="appShell">
 
-  <div id="selectionActionBar">
-    <div class="selection-side">
-      <button id="cancelSelectionBtn" class="selection-btn">إلغاء</button>
-      <div class="selection-title">خيارات الرسالة</div>
-      <div class="selection-count" id="selectionCountText">1 محددة</div>
+    <header id="mainHeader">
+      الشات الخاص 🤍
+      <div class="top-actions">
+        <button id="settingsBtn" class="top-btn">الإعدادات</button>
+        <button id="adminBtn" class="top-btn hidden">لوحة الأدمن</button>
+        <button id="logoutBtn" class="top-btn">خروج</button>
+      </div>
+    </header>
+
+    <div id="selectionActionBar">
+      <div class="selection-side">
+        <button id="cancelSelectionBtn" class="selection-btn">إلغاء</button>
+        <div class="selection-title">خيارات الرسالة</div>
+        <div class="selection-count" id="selectionCountText">1 محددة</div>
+      </div>
+
+      <div class="selection-actions">
+        <button id="replyActionBtn" class="selection-btn">رد</button>
+        <button id="copyActionBtn" class="selection-btn">نسخ</button>
+        <button id="editActionBtn" class="selection-btn hidden">تعديل</button>
+        <button id="deleteActionBtn" class="selection-btn danger hidden">حذف</button>
+      </div>
     </div>
 
-    <div class="selection-actions">
-      <button id="replyActionBtn" class="selection-btn">رد</button>
-      <button id="copyActionBtn" class="selection-btn">نسخ</button>
-      <button id="editActionBtn" class="selection-btn hidden">تعديل</button>
-      <button id="deleteActionBtn" class="selection-btn danger hidden">حذف</button>
+    <div id="statusBar">جاري التحقق من الجلسة...</div>
+
+    <div id="loadingView">
+      <div class="state-box">
+        <h2 id="loadingTitle">جاري التحميل</h2>
+        <p id="loadingText">لحظة من فضلك...</p>
+      </div>
     </div>
+
+    <div id="chatMain" class="hidden">
+      <div id="messages"></div>
+
+      <div id="composerArea">
+        <div id="replyPreviewBox"></div>
+        <div id="editPreviewBox"></div>
+        <div id="attachmentPreviewBox"></div>
+
+        <footer id="chatFooter">
+          <input id="text" type="text" placeholder="اكتب رسالة..." autocomplete="off" />
+          <input id="attachmentInput" type="file" accept="image/*,video/*,audio/*" />
+          <button id="pickAttachmentBtn" class="ghost-btn" title="مرفق">📎</button>
+          <button id="recordBtn" class="ghost-btn" title="تسجيل صوت">🎙️</button>
+          <button id="send">إرسال</button>
+        </footer>
+      </div>
+    </div>
+
   </div>
-
-  <div id="statusBar">جاري التحقق من الجلسة...</div>
-
-  <div id="loadingView">
-    <div class="state-box">
-      <h2 id="loadingTitle">جاري التحميل</h2>
-      <p id="loadingText">لحظة من فضلك...</p>
-    </div>
-  </div>
-
-  <div id="replyPreviewBox"></div>
-  <div id="editPreviewBox"></div>
-  <div id="attachmentPreviewBox"></div>
-
-  <div id="messages" class="hidden"></div>
-
-  <footer id="chatFooter" class="hidden">
-    <input id="text" type="text" placeholder="اكتب رسالة..." autocomplete="off" />
-    <input id="attachmentInput" type="file" accept="image/*,video/*,audio/*" />
-    <button id="pickAttachmentBtn" class="ghost-btn" title="مرفق">📎</button>
-    <button id="recordBtn" class="ghost-btn" title="تسجيل صوت">🎙️</button>
-    <button id="send">إرسال</button>
-  </footer>
 
   <div id="settingsOverlay">
     <div id="settingsPanel">
@@ -789,6 +790,7 @@
     'sb_publishable_esJOtB6hRNf48Uo61txcyg_9F3yolJO'
   )
 
+  const appShell = document.getElementById('appShell')
   const mainHeader = document.getElementById('mainHeader')
   const selectionActionBar = document.getElementById('selectionActionBar')
   const selectionCountText = document.getElementById('selectionCountText')
@@ -801,6 +803,7 @@
   const messagesBox = document.getElementById('messages')
   const input = document.getElementById('text')
   const sendBtn = document.getElementById('send')
+  const chatMain = document.getElementById('chatMain')
   const chatFooter = document.getElementById('chatFooter')
   const loadingView = document.getElementById('loadingView')
   const loadingTitle = document.getElementById('loadingTitle')
@@ -862,8 +865,8 @@
   }
 
   function syncViewportHeight() {
-    const viewportHeight = window.visualViewport?.height || window.innerHeight
-    document.documentElement.style.setProperty('--app-height', `${Math.round(viewportHeight)}px`)
+    const height = window.visualViewport?.height || window.innerHeight || document.documentElement.clientHeight
+    document.documentElement.style.setProperty('--vh', `${height * 0.01}px`)
   }
 
   function setStatus(text) {
@@ -886,13 +889,11 @@
 
   function showChat() {
     loadingView.classList.add('hidden')
-    messagesBox.classList.remove('hidden')
-    chatFooter.classList.remove('hidden')
+    chatMain.classList.remove('hidden')
   }
 
   function hideChat() {
-    messagesBox.classList.add('hidden')
-    chatFooter.classList.add('hidden')
+    chatMain.classList.add('hidden')
     loadingView.classList.remove('hidden')
   }
 
@@ -2010,7 +2011,6 @@
   window.addEventListener('resize', syncViewportHeight)
   window.addEventListener('orientationchange', syncViewportHeight)
   window.visualViewport?.addEventListener('resize', syncViewportHeight)
-  window.visualViewport?.addEventListener('scroll', syncViewportHeight)
 
   syncViewportHeight()
   init()
