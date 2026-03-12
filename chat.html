@@ -25,61 +25,78 @@
       --actionbar-h:58px;
       --safe-top:env(safe-area-inset-top, 0px);
       --safe-bottom:env(safe-area-inset-bottom, 0px);
-      --composer-h:76px;
-      --header-h:72px;
-      --selection-h:58px;
-      --reply-strip-h:0px;
-      --edit-strip-h:0px;
-      --attachment-strip-h:0px;
     }
 
     *{ box-sizing:border-box; }
 
     html, body{
+      width:100%;
+      max-width:100%;
+      height:100%;
+      margin:0;
+      padding:0;
+      overflow:hidden;
+      overflow-x:hidden;
       -webkit-text-size-adjust:100%;
       touch-action:manipulation;
-      margin:0;
-      width:100%;
-      height:100%;
-      overflow:hidden;
+      overscroll-behavior-x:none;
+      background:var(--bg);
     }
 
     body{
       font-family:tahoma,sans-serif;
-      background:var(--bg);
       color:var(--text);
-      min-height:100vh;
-      min-height:100dvh;
+    }
+
+    img, video, audio, canvas{
+      max-width:100%;
+    }
+
+    .hidden{
+      display:none !important;
     }
 
     .app-shell{
-      position:fixed;
-      inset:0;
-      overflow:hidden;
+      height:100vh;
+      height:100dvh;
+      min-height:100vh;
+      min-height:100dvh;
+      display:flex;
+      flex-direction:column;
       background:var(--bg);
-      padding-top:var(--safe-top);
-      padding-bottom:var(--safe-bottom);
+      overflow:hidden;
+      width:100%;
+      max-width:100%;
+    }
+
+    .top-area{
+      flex:0 0 auto;
+      width:100%;
+      max-width:100%;
+      overflow:hidden;
+      background:var(--header);
     }
 
     header{
-      position:absolute;
-      top:var(--safe-top);
-      left:0;
-      right:0;
-      height:var(--header-h);
       background:var(--header);
       border-bottom:1px solid var(--border);
-      z-index:30;
+      padding-top:var(--safe-top);
+      flex-shrink:0;
+      width:100%;
+      max-width:100%;
+      overflow:hidden;
     }
 
     .header-inner{
-      height:100%;
+      min-height:68px;
       display:flex;
       align-items:center;
       justify-content:center;
       position:relative;
-      padding:0 16px;
-      min-width:0;
+      padding:0 14px;
+      width:100%;
+      max-width:100%;
+      overflow:hidden;
     }
 
     .header-title{
@@ -89,8 +106,9 @@
       white-space:nowrap;
       overflow:hidden;
       text-overflow:ellipsis;
-      padding:0 116px;
       line-height:1.2;
+      max-width:100%;
+      padding-inline:120px 10px;
     }
 
     .top-actions{
@@ -99,9 +117,9 @@
       top:50%;
       transform:translateY(-50%);
       display:flex;
+      align-items:center;
       gap:8px;
       flex-wrap:nowrap;
-      align-items:center;
       max-width:calc(100% - 24px);
       overflow:hidden;
     }
@@ -122,20 +140,18 @@
     }
 
     #selectionActionBar{
-      position:absolute;
-      top:var(--safe-top);
-      left:0;
-      right:0;
-      height:var(--selection-h);
       display:none;
       align-items:center;
       justify-content:space-between;
       gap:10px;
+      min-height:var(--actionbar-h);
       background:var(--header);
       border-bottom:1px solid var(--border);
       padding:8px 12px;
-      z-index:40;
-      min-width:0;
+      flex-shrink:0;
+      width:100%;
+      max-width:100%;
+      overflow:hidden;
     }
 
     #selectionActionBar.active{
@@ -166,7 +182,7 @@
       align-items:center;
       gap:8px;
       flex-wrap:nowrap;
-      overflow:auto;
+      overflow:auto hidden;
       min-width:0;
       -webkit-overflow-scrolling:touch;
     }
@@ -190,12 +206,19 @@
       color:#fff;
     }
 
+    #chatMain{
+      flex:1 1 auto;
+      min-height:0;
+      display:flex;
+      flex-direction:column;
+      width:100%;
+      max-width:100%;
+      overflow:hidden;
+    }
+
     #loadingView{
-      position:absolute;
-      top:calc(var(--safe-top) + var(--header-h));
-      left:0;
-      right:0;
-      bottom:calc(var(--safe-bottom) + var(--composer-h));
+      flex:1 1 auto;
+      min-height:0;
       display:flex;
       align-items:center;
       justify-content:center;
@@ -213,12 +236,13 @@
     }
 
     #messages{
-      position:absolute;
-      left:0;
-      right:0;
-      top:calc(var(--safe-top) + var(--header-h));
-      bottom:calc(var(--safe-bottom) + var(--composer-h) + var(--reply-strip-h) + var(--edit-strip-h) + var(--attachment-strip-h));
+      flex:1 1 auto;
+      min-height:0;
+      min-width:0;
+      width:100%;
+      max-width:100%;
       overflow:auto;
+      overflow-x:hidden;
       padding:12px 10px;
       display:flex;
       flex-direction:column;
@@ -230,8 +254,7 @@
       touch-action:pan-y;
       -webkit-overflow-scrolling:touch;
       overscroll-behavior:contain;
-      min-width:0;
-      z-index:10;
+      overscroll-behavior-x:none;
     }
 
     .msg{
@@ -274,8 +297,6 @@
       margin-bottom:5px;
       font-weight:bold;
       pointer-events:none;
-      -webkit-user-select:none;
-      user-select:none;
       min-width:0;
       max-width:100%;
       overflow:hidden;
@@ -285,8 +306,6 @@
 
     .msg .content{
       pointer-events:none;
-      -webkit-user-select:none;
-      user-select:none;
       min-width:0;
       max-width:100%;
       white-space:pre-wrap;
@@ -304,8 +323,6 @@
       align-items:center;
       flex-wrap:wrap;
       pointer-events:none;
-      -webkit-user-select:none;
-      user-select:none;
       min-width:0;
       max-width:100%;
     }
@@ -318,6 +335,7 @@
     .msg .attachment{
       display:block;
       margin-top:8px;
+      width:auto;
       max-width:100%;
       border-radius:12px;
       border:1px solid rgba(255,255,255,.08);
@@ -356,10 +374,9 @@
       border-right:3px solid rgba(255,255,255,.55);
       font-size:12px;
       pointer-events:none;
-      -webkit-user-select:none;
-      user-select:none;
       min-width:0;
       max-width:100%;
+      overflow:hidden;
     }
 
     .msg-reply-name{
@@ -382,13 +399,13 @@
     }
 
     #composerArea{
-      position:absolute;
-      left:0;
-      right:0;
-      bottom:var(--safe-bottom);
-      z-index:35;
+      flex:0 0 auto;
+      width:100%;
+      max-width:100%;
       background:var(--card);
       border-top:1px solid var(--border);
+      padding-bottom:var(--safe-bottom);
+      overflow:hidden;
     }
 
     #replyPreviewBox,
@@ -398,10 +415,13 @@
       padding:8px 12px;
       background:#111827;
       border-top:1px solid var(--border);
+      width:100%;
+      max-width:100%;
+      overflow:hidden;
     }
 
     footer{
-      height:var(--composer-h);
+      min-height:76px;
       display:flex;
       gap:8px;
       padding:10px;
@@ -409,10 +429,13 @@
       align-items:center;
       flex-wrap:nowrap;
       min-width:0;
+      width:100%;
+      max-width:100%;
+      overflow:hidden;
     }
 
     input[type="text"]{
-      flex:1;
+      flex:1 1 auto;
       min-width:0;
       width:100%;
       padding:12px;
@@ -436,7 +459,7 @@
     }
 
     #send{
-      flex-shrink:0;
+      flex:0 0 auto;
       white-space:nowrap;
       min-width:80px;
       height:48px;
@@ -450,7 +473,7 @@
       white-space:nowrap;
       font-size:20px;
       line-height:1;
-      flex-shrink:0;
+      flex:0 0 auto;
       display:flex;
       align-items:center;
       justify-content:center;
@@ -486,6 +509,9 @@
       color:var(--muted);
       font-size:13px;
       min-width:0;
+      width:100%;
+      max-width:100%;
+      overflow:hidden;
     }
 
     .attachment-chip .chip-main,
@@ -497,6 +523,7 @@
       flex-wrap:wrap;
       min-width:0;
       flex:1;
+      max-width:100%;
     }
 
     .attachment-chip .chip-text,
@@ -526,10 +553,7 @@
       padding:0;
       margin:0;
       min-width:auto;
-    }
-
-    .hidden{
-      display:none !important;
+      flex:0 0 auto;
     }
 
     #settingsOverlay{
@@ -632,6 +656,7 @@
       justify-content:center;
       z-index:2000;
       padding:20px;
+      overflow:hidden;
     }
 
     #mediaViewer img,
@@ -643,13 +668,12 @@
     }
 
     @media (max-width:700px){
-      :root{
-        --composer-h:74px;
-        --header-h:68px;
+      .header-inner{
+        min-height:64px;
       }
 
       .header-title{
-        padding:0 110px;
+        padding-inline:118px 8px;
         font-size:17px;
       }
 
@@ -665,7 +689,6 @@
 
       #messages{
         padding:10px 8px;
-        gap:8px;
       }
 
       .msg{
@@ -682,6 +705,7 @@
       }
 
       footer{
+        min-height:74px;
         padding:8px;
       }
 
@@ -692,7 +716,7 @@
 
     @media (max-width:420px){
       .header-title{
-        padding:0 100px;
+        padding-inline:112px 8px;
         font-size:16px;
       }
 
@@ -723,53 +747,57 @@
 
   <div class="app-shell">
 
-    <header id="mainHeader">
-      <div class="header-inner">
-        <div class="header-title">الشات الخاص 🤍</div>
-        <div class="top-actions">
-          <button id="settingsBtn" class="top-btn">الإعدادات</button>
-          <button id="adminBtn" class="top-btn hidden">لوحة الأدمن</button>
-          <button id="logoutBtn" class="top-btn">خروج</button>
+    <div class="top-area">
+      <header id="mainHeader">
+        <div class="header-inner">
+          <div class="header-title">الشات الخاص 🤍</div>
+          <div class="top-actions">
+            <button id="settingsBtn" class="top-btn">الإعدادات</button>
+            <button id="adminBtn" class="top-btn hidden">لوحة الأدمن</button>
+            <button id="logoutBtn" class="top-btn">خروج</button>
+          </div>
+        </div>
+      </header>
+
+      <div id="selectionActionBar">
+        <div class="selection-side">
+          <button id="cancelSelectionBtn" class="selection-btn">إلغاء</button>
+          <div class="selection-title">خيارات الرسالة</div>
+          <div class="selection-count" id="selectionCountText">1 محددة</div>
+        </div>
+
+        <div class="selection-actions">
+          <button id="replyActionBtn" class="selection-btn">رد</button>
+          <button id="copyActionBtn" class="selection-btn">نسخ</button>
+          <button id="editActionBtn" class="selection-btn hidden">تعديل</button>
+          <button id="deleteActionBtn" class="selection-btn danger hidden">حذف</button>
         </div>
       </div>
-    </header>
-
-    <div id="selectionActionBar">
-      <div class="selection-side">
-        <button id="cancelSelectionBtn" class="selection-btn">إلغاء</button>
-        <div class="selection-title">خيارات الرسالة</div>
-        <div class="selection-count" id="selectionCountText">1 محددة</div>
-      </div>
-
-      <div class="selection-actions">
-        <button id="replyActionBtn" class="selection-btn">رد</button>
-        <button id="copyActionBtn" class="selection-btn">نسخ</button>
-        <button id="editActionBtn" class="selection-btn hidden">تعديل</button>
-        <button id="deleteActionBtn" class="selection-btn danger hidden">حذف</button>
-      </div>
     </div>
 
-    <div id="loadingView">
-      <div class="state-box">
-        <h2 id="loadingTitle">جاري التحميل</h2>
-        <p id="loadingText">لحظة من فضلك...</p>
+    <div id="chatMain">
+      <div id="loadingView">
+        <div class="state-box">
+          <h2 id="loadingTitle">جاري التحميل</h2>
+          <p id="loadingText">لحظة من فضلك...</p>
+        </div>
       </div>
-    </div>
 
-    <div id="messages" class="hidden"></div>
+      <div id="messages" class="hidden"></div>
 
-    <div id="composerArea" class="hidden">
-      <div id="replyPreviewBox"></div>
-      <div id="editPreviewBox"></div>
-      <div id="attachmentPreviewBox"></div>
+      <div id="composerArea" class="hidden">
+        <div id="replyPreviewBox"></div>
+        <div id="editPreviewBox"></div>
+        <div id="attachmentPreviewBox"></div>
 
-      <footer id="chatFooter">
-        <input id="text" type="text" placeholder="اكتب رسالة..." autocomplete="off" />
-        <input id="attachmentInput" type="file" accept="image/*,video/*,audio/*" />
-        <button id="pickAttachmentBtn" class="ghost-btn" title="مرفق">📎</button>
-        <button id="recordBtn" class="ghost-btn" title="تسجيل صوت">🎙️</button>
-        <button id="send">إرسال</button>
-      </footer>
+        <footer id="chatFooter">
+          <input id="text" type="text" placeholder="اكتب رسالة..." autocomplete="off" />
+          <input id="attachmentInput" type="file" accept="image/*,video/*,audio/*" />
+          <button id="pickAttachmentBtn" class="ghost-btn" title="مرفق">📎</button>
+          <button id="recordBtn" class="ghost-btn" title="تسجيل صوت">🎙️</button>
+          <button id="send">إرسال</button>
+        </footer>
+      </div>
     </div>
 
   </div>
@@ -855,6 +883,7 @@
   const editActionBtn = document.getElementById('editActionBtn')
   const deleteActionBtn = document.getElementById('deleteActionBtn')
 
+  const chatMain = document.getElementById('chatMain')
   const messagesBox = document.getElementById('messages')
   const input = document.getElementById('text')
   const sendBtn = document.getElementById('send')
@@ -917,13 +946,6 @@
     bubbleRadius: '12px'
   }
 
-  function updateComposerOffsets() {
-    const root = document.documentElement
-    root.style.setProperty('--reply-strip-h', `${replyPreviewBox.style.display === 'block' ? replyPreviewBox.offsetHeight : 0}px`)
-    root.style.setProperty('--edit-strip-h', `${editPreviewBox.style.display === 'block' ? editPreviewBox.offsetHeight : 0}px`)
-    root.style.setProperty('--attachment-strip-h', `${attachmentPreviewBox.style.display === 'block' ? attachmentPreviewBox.offsetHeight : 0}px`)
-  }
-
   function setStatus(text) {
     console.log(text)
   }
@@ -946,7 +968,6 @@
     loadingView.classList.add('hidden')
     messagesBox.classList.remove('hidden')
     composerArea.classList.remove('hidden')
-    updateComposerOffsets()
   }
 
   function hideChat() {
@@ -1054,7 +1075,6 @@
     if (!selectedAttachmentFile) {
       attachmentPreviewBox.style.display = 'none'
       attachmentPreviewBox.innerHTML = ''
-      updateComposerOffsets()
       return
     }
 
@@ -1078,14 +1098,12 @@
     `
 
     document.getElementById('removeAttachmentBtn').addEventListener('click', clearSelectedAttachment)
-    updateComposerOffsets()
   }
 
   function updateReplyPreviewUI() {
     if (!selectedReplyMessageId) {
       replyPreviewBox.style.display = 'none'
       replyPreviewBox.innerHTML = ''
-      updateComposerOffsets()
       return
     }
 
@@ -1104,7 +1122,6 @@
     `
 
     document.getElementById('removeReplyBtn').addEventListener('click', clearReplySelection)
-    updateComposerOffsets()
   }
 
   function updateEditPreviewUI() {
@@ -1112,7 +1129,6 @@
       editPreviewBox.style.display = 'none'
       editPreviewBox.innerHTML = ''
       sendBtn.textContent = 'إرسال'
-      updateComposerOffsets()
       return
     }
 
@@ -1129,7 +1145,6 @@
 
     sendBtn.textContent = 'حفظ'
     document.getElementById('removeEditBtn').addEventListener('click', clearEditSelection)
-    updateComposerOffsets()
   }
 
   function clearSelectedAttachment() {
@@ -1815,7 +1830,7 @@
           reply_to_id: selectedReplyMessageId || null
         })
 
-      if (error) throw error
+        if (error) throw error
 
       input.value = ''
       clearSelectedAttachment()
@@ -1835,7 +1850,7 @@
     }
 
     realtimeChannel = supabase
-      .channel('chat_messages_live_v11')
+      .channel('chat_messages_live_v13')
       .on(
         'postgres_changes',
         {
@@ -1931,7 +1946,6 @@
       await loadMessages()
       await initRealtime()
       startAccountStatusWatcher()
-      updateComposerOffsets()
     } catch (err) {
       console.error(err)
       if (String(err.message || '').includes('محظور')) return
@@ -2071,9 +2085,6 @@
   document.addEventListener('scroll', () => {
     cancelLongPress()
   }, true)
-
-  window.addEventListener('resize', updateComposerOffsets)
-  window.visualViewport?.addEventListener('resize', updateComposerOffsets)
 
   init()
 </script>
