@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-<title>اختبار الشات الثابت</title>
+<title>اختبار شات محسن</title>
 
 <style>
 :root{
@@ -11,10 +11,13 @@
   --header:#1e293b;
   --footer:#1e293b;
   --mine:#2563eb;
-  --other:#334155;
-  --border:#475569;
+  --other:#1f2937;
+  --border:#334155;
+  --text:#ffffff;
+  --muted:#cbd5e1;
   --safe-top:env(safe-area-inset-top, 0px);
   --safe-bottom:env(safe-area-inset-bottom, 0px);
+  --reply-accent:#86efac;
 }
 
 *{
@@ -29,13 +32,23 @@ html,body{
   overflow:hidden;
   background:var(--bg);
   font-family:tahoma,sans-serif;
-  color:#fff;
+  color:var(--text);
   -webkit-text-size-adjust:100%;
 }
 
 body{
   position:fixed;
   inset:0;
+}
+
+button,
+input,
+textarea{
+  font-family:inherit;
+}
+
+.hidden{
+  display:none !important;
 }
 
 .app{
@@ -45,7 +58,9 @@ body{
   grid-template-rows:auto 1fr auto;
   width:100%;
   height:100dvh;
-  background:var(--bg);
+  background:
+    linear-gradient(rgba(15,23,42,.97), rgba(15,23,42,.97)),
+    radial-gradient(circle at top right, rgba(37,99,235,.18), transparent 30%);
   overflow:hidden;
 }
 
@@ -64,6 +79,7 @@ header{
   justify-content:center;
   padding:0 14px;
   font-size:18px;
+  font-weight:bold;
 }
 
 /* messages */
@@ -71,41 +87,174 @@ header{
   min-height:0;
   overflow-y:auto;
   overflow-x:hidden;
-  padding:12px 10px;
+  padding:14px 10px;
   display:flex;
   flex-direction:column;
   gap:10px;
-  background:var(--bg);
+  background:transparent;
   -webkit-overflow-scrolling:touch;
+}
+
+.msg-wrap{
+  display:flex;
+  flex-direction:column;
+  gap:4px;
+  position:relative;
+  transition:transform .16s ease;
+  will-change:transform;
+}
+
+.msg-wrap.me{
+  align-items:flex-end;
+}
+
+.msg-wrap.other{
+  align-items:flex-start;
+}
+
+.reply-hint{
+  position:absolute;
+  top:50%;
+  transform:translateY(-50%);
+  opacity:0;
+  transition:opacity .12s ease;
+  font-size:18px;
+  pointer-events:none;
+}
+
+.msg-wrap.swiping .reply-hint{
+  opacity:1;
+}
+
+.msg-wrap.me .reply-hint{
+  right:-24px;
+}
+
+.msg-wrap.other .reply-hint{
+  left:-24px;
 }
 
 .msg{
   max-width:80%;
-  padding:10px 12px;
-  border-radius:12px;
+  padding:10px 12px 8px;
+  border-radius:16px;
   word-break:break-word;
   overflow-wrap:anywhere;
+  position:relative;
+  box-shadow:0 6px 14px rgba(0,0,0,.16);
 }
 
 .msg.me{
   background:var(--mine);
-  align-self:flex-end;
+  border-bottom-right-radius:6px;
 }
 
 .msg.other{
   background:var(--other);
-  align-self:flex-start;
+  border-bottom-left-radius:6px;
 }
 
-/* footer */
-footer{
+.reply-box{
+  background:rgba(255,255,255,.11);
+  border-right:3px solid var(--reply-accent);
+  border-radius:10px;
+  padding:7px 9px;
+  margin-bottom:8px;
+  font-size:12px;
+  overflow:hidden;
+}
+
+.reply-name{
+  font-weight:bold;
+  margin-bottom:3px;
+}
+
+.reply-text{
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  opacity:.95;
+}
+
+.msg-text{
+  white-space:pre-wrap;
+  line-height:1.45;
+  font-size:15px;
+}
+
+.msg-meta{
+  margin-top:6px;
+  display:flex;
+  justify-content:flex-end;
+  gap:6px;
+  font-size:11px;
+  color:rgba(255,255,255,.82);
+}
+
+/* composer */
+.composer-shell{
   background:var(--footer);
   border-top:1px solid var(--border);
-  padding:10px 10px calc(10px + var(--safe-bottom));
+  padding-bottom:var(--safe-bottom);
+}
+
+.reply-preview{
+  padding:8px 10px 0;
+}
+
+.reply-preview-box{
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:10px;
+  background:#111827;
+  border:1px solid rgba(255,255,255,.07);
+  border-right:4px solid var(--reply-accent);
+  border-radius:12px;
+  padding:10px 12px;
+}
+
+.reply-preview-main{
+  min-width:0;
+  flex:1;
+}
+
+.reply-preview-title{
+  font-size:12px;
+  font-weight:bold;
+  margin-bottom:4px;
+}
+
+.reply-preview-text{
+  font-size:12px;
+  color:var(--muted);
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+
+.reply-close{
+  background:transparent;
+  border:none;
+  color:#fff;
+  font-size:18px;
+  line-height:1;
+  cursor:pointer;
+  padding:0;
+}
+
+footer{
+  min-height:76px;
   display:flex;
   gap:8px;
+  padding:10px;
+  background:var(--footer);
   align-items:center;
-  z-index:10;
+  flex-wrap:nowrap;
+  min-width:0;
+  width:100%;
+  max-width:100%;
+  overflow:hidden;
 }
 
 input{
@@ -114,23 +263,71 @@ input{
   height:48px;
   border:none;
   outline:none;
-  border-radius:10px;
-  padding:12px;
+  border-radius:14px;
+  padding:12px 14px;
   font-size:16px;
   background:#fff;
   color:#111827;
 }
 
-button{
+button.send-btn{
   flex:0 0 auto;
   min-width:72px;
   height:48px;
   border:none;
-  border-radius:10px;
+  border-radius:14px;
   background:#2563eb;
   color:#fff;
   font-size:15px;
   cursor:pointer;
+}
+
+/* action menu */
+.menu-overlay{
+  position:fixed;
+  inset:0;
+  background:rgba(0,0,0,.34);
+  display:none;
+  align-items:flex-end;
+  justify-content:center;
+  padding:14px;
+  z-index:1000;
+}
+
+.menu-sheet{
+  width:min(460px,100%);
+  background:#111827;
+  border:1px solid rgba(255,255,255,.08);
+  border-radius:18px;
+  overflow:hidden;
+  box-shadow:0 20px 50px rgba(0,0,0,.35);
+}
+
+.menu-head{
+  padding:14px 16px;
+  border-bottom:1px solid rgba(255,255,255,.06);
+  font-size:13px;
+  color:var(--muted);
+}
+
+.menu-btn{
+  width:100%;
+  background:transparent;
+  border:none;
+  color:#fff;
+  text-align:right;
+  padding:16px;
+  font-size:16px;
+  cursor:pointer;
+  border-bottom:1px solid rgba(255,255,255,.06);
+}
+
+.menu-btn:last-child{
+  border-bottom:none;
+}
+
+.menu-btn.danger{
+  color:#fca5a5;
 }
 
 @media (max-width:420px){
@@ -139,11 +336,16 @@ button{
     font-size:17px;
   }
 
-  input,button{
+  .msg{
+    max-width:86%;
+  }
+
+  input,
+  .send-btn{
     height:46px;
   }
 
-  button{
+  .send-btn{
     min-width:68px;
   }
 }
@@ -156,42 +358,368 @@ button{
     <div class="header-inner">الشات الخاص 🤍</div>
   </header>
 
-  <div class="messages" id="messages">
-    <div class="msg other">هذه رسالة تجريبية من الطرف الآخر</div>
-    <div class="msg me">وهذه رسالة منك</div>
-    <div class="msg other">اختبر الآن ثبات الهيدر والفوتر.</div>
-    <div class="msg me">واختبر أيضًا الكيبورد والتمرير.</div>
-    <div class="msg other">إذا ثبتت هذه النسخة، سنبني عليها الشات الحقيقي.</div>
-  </div>
+  <div class="messages" id="messages"></div>
 
-  <footer>
-    <input id="text" type="text" placeholder="اكتب رسالة..." autocomplete="off" />
-    <button id="sendBtn" type="button">إرسال</button>
-  </footer>
+  <div class="composer-shell">
+    <div class="reply-preview hidden" id="replyPreview"></div>
+
+    <footer>
+      <input id="text" type="text" placeholder="اكتب رسالة..." autocomplete="off" />
+      <button class="send-btn" id="sendBtn" type="button">إرسال</button>
+    </footer>
+  </div>
+</div>
+
+<div class="menu-overlay" id="menuOverlay">
+  <div class="menu-sheet">
+    <div class="menu-head" id="menuHead">خيارات الرسالة</div>
+    <div id="menuActions"></div>
+  </div>
 </div>
 
 <script>
-const messages = document.getElementById('messages');
+const messagesEl = document.getElementById('messages');
 const input = document.getElementById('text');
 const sendBtn = document.getElementById('sendBtn');
+const replyPreview = document.getElementById('replyPreview');
+const menuOverlay = document.getElementById('menuOverlay');
+const menuHead = document.getElementById('menuHead');
+const menuActions = document.getElementById('menuActions');
 
-function send(){
+let replyingToId = null;
+let editingId = null;
+let menuTargetId = null;
+
+let longPressTimer = null;
+let pressStartX = 0;
+let pressStartY = 0;
+let isSwiping = false;
+let swipeTarget = null;
+let suppressClickUntil = 0;
+
+const SWIPE_REPLY_THRESHOLD = 72;
+const SWIPE_MAX = 90;
+const LONG_PRESS_MS = 380;
+const MOVE_CANCEL = 10;
+
+const data = [
+  { id: 1, mine: false, text: 'السلام عليكم', time: '10:10 ص' },
+  { id: 2, mine: true, text: 'وعليكم السلام 🤍', time: '10:11 ص' },
+  { id: 3, mine: false, text: 'هذه نسخة مستقرة، والآن نضيف عليها السحب للرد والضغط المطول.', time: '10:12 ص' },
+  { id: 4, mine: true, text: 'ممتاز جدًا', time: '10:13 ص' }
+];
+
+function escapeHtml(str) {
+  return String(str)
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#039;');
+}
+
+function getMsgById(id) {
+  return data.find(m => m.id === id) || null;
+}
+
+function buildReplyPreviewText(msg) {
+  if (!msg) return 'رسالة';
+  return msg.text?.trim() || 'رسالة';
+}
+
+function renderReplySnippet(msg) {
+  if (!msg.replyToId) return '';
+  const original = getMsgById(msg.replyToId);
+  const name = original ? (original.mine ? 'أنت' : 'الطرف الآخر') : 'رسالة';
+  const text = buildReplyPreviewText(original);
+
+  return `
+    <div class="reply-box">
+      <div class="reply-name">${escapeHtml(name)}</div>
+      <div class="reply-text">${escapeHtml(text)}</div>
+    </div>
+  `;
+}
+
+function renderMessages() {
+  messagesEl.innerHTML = '';
+
+  data.forEach(msg => {
+    const wrap = document.createElement('div');
+    wrap.className = `msg-wrap ${msg.mine ? 'me' : 'other'}`;
+    wrap.dataset.id = String(msg.id);
+
+    wrap.innerHTML = `
+      <div class="reply-hint">↩️</div>
+      <div class="msg ${msg.mine ? 'me' : 'other'}">
+        ${renderReplySnippet(msg)}
+        <div class="msg-text">${escapeHtml(msg.text)}</div>
+        <div class="msg-meta">
+          ${msg.edited ? '<span>(تم التعديل)</span>' : ''}
+          <span>${escapeHtml(msg.time)}</span>
+        </div>
+      </div>
+    `;
+
+    bindInteractions(wrap, msg);
+    messagesEl.appendChild(wrap);
+  });
+
+  messagesEl.scrollTop = messagesEl.scrollHeight;
+}
+
+function openReplyPreview(msgId) {
+  replyingToId = msgId;
+  const msg = getMsgById(msgId);
+  const name = msg?.mine ? 'أنت' : 'الطرف الآخر';
+  const text = buildReplyPreviewText(msg);
+
+  replyPreview.classList.remove('hidden');
+  replyPreview.innerHTML = `
+    <div class="reply-preview-box">
+      <div class="reply-preview-main">
+        <div class="reply-preview-title">رد على ${escapeHtml(name)}</div>
+        <div class="reply-preview-text">${escapeHtml(text)}</div>
+      </div>
+      <button class="reply-close" id="closeReplyBtn" type="button">×</button>
+    </div>
+  `;
+
+  document.getElementById('closeReplyBtn').addEventListener('click', () => {
+    replyingToId = null;
+    replyPreview.classList.add('hidden');
+    replyPreview.innerHTML = '';
+  });
+
+  input.focus();
+}
+
+function openMenu(msg) {
+  menuTargetId = msg.id;
+  menuHead.textContent = msg.mine ? 'خيارات رسالتك' : 'خيارات الرسالة';
+  menuActions.innerHTML = '';
+
+  const actions = [];
+
+  actions.push({ label: 'نسخ', action: () => copyMessage(msg.id) });
+
+  if (msg.mine) {
+    actions.push({ label: 'تعديل', action: () => editMessage(msg.id) });
+    actions.push({ label: 'حذف', action: () => deleteMessage(msg.id), danger: true });
+  }
+
+  actions.forEach(item => {
+    const btn = document.createElement('button');
+    btn.className = `menu-btn${item.danger ? ' danger' : ''}`;
+    btn.type = 'button';
+    btn.textContent = item.label;
+    btn.addEventListener('click', () => {
+      closeMenu();
+      item.action();
+    });
+    menuActions.appendChild(btn);
+  });
+
+  menuOverlay.style.display = 'flex';
+}
+
+function closeMenu() {
+  menuOverlay.style.display = 'none';
+  menuTargetId = null;
+}
+
+async function copyMessage(id) {
+  const msg = getMsgById(id);
+  if (!msg) return;
+  try {
+    await navigator.clipboard.writeText(msg.text || '');
+  } catch {
+    alert('تعذر النسخ');
+  }
+}
+
+function editMessage(id) {
+  const msg = getMsgById(id);
+  if (!msg || !msg.mine) return;
+  editingId = id;
+  replyingToId = null;
+  replyPreview.classList.add('hidden');
+  replyPreview.innerHTML = '';
+  input.value = msg.text;
+  input.focus();
+  sendBtn.textContent = 'حفظ';
+}
+
+function deleteMessage(id) {
+  const idx = data.findIndex(m => m.id === id);
+  if (idx === -1) return;
+  if (!confirm('هل تريد حذف الرسالة؟')) return;
+  data.splice(idx, 1);
+  renderMessages();
+}
+
+function sendMessage() {
   const text = input.value.trim();
   if (!text) return;
 
-  const div = document.createElement('div');
-  div.className = 'msg me';
-  div.textContent = text;
-  messages.appendChild(div);
+  if (editingId) {
+    const msg = getMsgById(editingId);
+    if (msg) {
+      msg.text = text;
+      msg.edited = true;
+    }
+    editingId = null;
+    sendBtn.textContent = 'إرسال';
+    input.value = '';
+    renderMessages();
+    return;
+  }
+
+  data.push({
+    id: Date.now(),
+    mine: true,
+    text,
+    time: new Date().toLocaleTimeString('ar', { hour: '2-digit', minute: '2-digit' }),
+    replyToId: replyingToId || null
+  });
+
   input.value = '';
-  messages.scrollTop = messages.scrollHeight;
+  replyingToId = null;
+  replyPreview.classList.add('hidden');
+  replyPreview.innerHTML = '';
+  renderMessages();
 }
 
-sendBtn.addEventListener('click', send);
+function getPoint(e) {
+  if (e.touches?.length) {
+    return { x: e.touches[0].clientX, y: e.touches[0].clientY };
+  }
+  if (e.changedTouches?.length) {
+    return { x: e.changedTouches[0].clientX, y: e.changedTouches[0].clientY };
+  }
+  return { x: e.clientX || 0, y: e.clientY || 0 };
+}
+
+function clearLongPress() {
+  if (longPressTimer) {
+    clearTimeout(longPressTimer);
+    longPressTimer = null;
+  }
+}
+
+function resetSwipe(wrap) {
+  if (!wrap) return;
+  wrap.style.transform = 'translateX(0px)';
+  wrap.classList.remove('swiping');
+}
+
+function handleSwipeMove(e, wrap) {
+  if (!swipeTarget) return;
+
+  const point = getPoint(e);
+  const dx = point.x - pressStartX;
+  const dy = Math.abs(point.y - pressStartY);
+
+  if (dy > MOVE_CANCEL && !isSwiping) {
+    clearLongPress();
+    swipeTarget = null;
+    resetSwipe(wrap);
+    return;
+  }
+
+  if (dx > 0) {
+    isSwiping = true;
+    clearLongPress();
+    const move = Math.min(dx, SWIPE_MAX);
+    wrap.style.transform = `translateX(${move}px)`;
+    wrap.classList.add('swiping');
+  }
+}
+
+function handleSwipeEnd(wrap, msg) {
+  clearLongPress();
+
+  const matrix = new DOMMatrixReadOnly(getComputedStyle(wrap).transform);
+  const movedX = matrix.m41 || 0;
+
+  if (movedX >= SWIPE_REPLY_THRESHOLD) {
+    openReplyPreview(msg.id);
+    if (navigator.vibrate) navigator.vibrate(20);
+  }
+
+  resetSwipe(wrap);
+  swipeTarget = null;
+  isSwiping = false;
+}
+
+function bindInteractions(wrap, msg) {
+  const start = (e) => {
+    const target = e.target;
+    if (target.closest('button') || target.closest('input') || target.closest('textarea')) return;
+
+    const p = getPoint(e);
+    pressStartX = p.x;
+    pressStartY = p.y;
+    swipeTarget = wrap;
+    isSwiping = false;
+
+    clearLongPress();
+    longPressTimer = setTimeout(() => {
+      suppressClickUntil = Date.now() + 600;
+      openMenu(msg);
+      if (navigator.vibrate) navigator.vibrate(18);
+    }, LONG_PRESS_MS);
+  };
+
+  const move = (e) => handleSwipeMove(e, wrap);
+  const end = () => handleSwipeEnd(wrap, msg);
+  const cancel = () => {
+    clearLongPress();
+    resetSwipe(wrap);
+    swipeTarget = null;
+    isSwiping = false;
+  };
+
+  wrap.addEventListener('touchstart', start, { passive: true });
+  wrap.addEventListener('touchmove', move, { passive: true });
+  wrap.addEventListener('touchend', end);
+  wrap.addEventListener('touchcancel', cancel);
+
+  wrap.addEventListener('mousedown', (e) => {
+    if (e.button !== 0) return;
+    start(e);
+  });
+  wrap.addEventListener('mousemove', move);
+  wrap.addEventListener('mouseup', end);
+  wrap.addEventListener('mouseleave', cancel);
+
+  wrap.addEventListener('contextmenu', (e) => e.preventDefault());
+  wrap.addEventListener('dragstart', (e) => e.preventDefault());
+  wrap.addEventListener('selectstart', (e) => e.preventDefault());
+
+  wrap.addEventListener('click', (e) => {
+    if (Date.now() < suppressClickUntil) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+  });
+}
+
+sendBtn.addEventListener('click', sendMessage);
 
 input.addEventListener('keydown', (e) => {
-  if (e.key === 'Enter') send();
+  if (e.key === 'Enter') sendMessage();
 });
+
+menuOverlay.addEventListener('click', (e) => {
+  if (e.target === menuOverlay) closeMenu();
+});
+
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') closeMenu();
+});
+
+renderMessages();
 </script>
 
 </body>
