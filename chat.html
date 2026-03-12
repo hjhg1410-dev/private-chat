@@ -18,6 +18,8 @@
   --safe-top:env(safe-area-inset-top, 0px);
   --safe-bottom:env(safe-area-inset-bottom, 0px);
   --reply-accent:#86efac;
+  --header-total-h:72px;
+  --composer-total-h:88px;
 }
 
 *{
@@ -40,6 +42,7 @@ html,body{
 body{
   position:fixed;
   inset:0;
+  touch-action:none;
 }
 
 button,
@@ -55,31 +58,28 @@ textarea{
 .app{
   position:fixed;
   inset:0;
-  display:grid;
-  grid-template-rows:auto 1fr auto;
   width:100%;
-  height:100dvh;
+  height:100%;
+  overflow:hidden;
   background:
     linear-gradient(rgba(15,23,42,.97), rgba(15,23,42,.97)),
     radial-gradient(circle at top right, rgba(37,99,235,.18), transparent 30%);
-  overflow:hidden;
 }
 
-/* header */
+/* header fixed */
 header{
-position:fixed;
-top:0;
-left:0;
-right:0;
-z-index:50;
-
-background:var(--header);
-border-bottom:1px solid var(--border);
-padding-top:var(--safe-top);
+  position:fixed;
+  top:0;
+  left:0;
+  right:0;
+  z-index:50;
+  background:var(--header);
+  border-bottom:1px solid var(--border);
+  padding-top:var(--safe-top);
 }
 
 .header-inner{
-  min-height:60px;
+  min-height:56px;
   display:flex;
   align-items:center;
   justify-content:center;
@@ -88,27 +88,27 @@ padding-top:var(--safe-top);
   font-weight:bold;
 }
 
-/* messages */
+/* messages only scroll */
 .messages{
-position:absolute;
-top:70px;
-bottom:80px;
-left:0;
-right:0;
-
-overflow-y:auto;
-overflow-x:hidden;
-
-padding:14px 10px;
-display:flex;
-flex-direction:column;
-gap:10px;
-
--webkit-overflow-scrolling:touch;
-overscroll-behavior:contain;
-touch-action:pan-y;
+  position:fixed;
+  top:var(--header-total-h);
+  left:0;
+  right:0;
+  bottom:var(--composer-total-h);
+  overflow-y:auto;
+  overflow-x:hidden;
+  padding:14px 10px;
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+  background:transparent;
+  -webkit-overflow-scrolling:touch;
+  overscroll-behavior-y:contain;
+  overscroll-behavior-x:none;
+  touch-action:pan-y;
 }
 
+/* message wrappers */
 .msg-wrap{
   display:flex;
   flex-direction:column;
@@ -205,17 +205,16 @@ touch-action:pan-y;
   color:rgba(255,255,255,.82);
 }
 
-/* composer */
+/* composer fixed */
 .composer-shell{
-position:fixed;
-left:0;
-right:0;
-bottom:0;
-z-index:50;
-
-background:var(--footer);
-border-top:1px solid var(--border);
-padding-bottom:var(--safe-bottom);
+  position:fixed;
+  left:0;
+  right:0;
+  bottom:0;
+  z-index:50;
+  background:var(--footer);
+  border-top:1px solid var(--border);
+  padding-bottom:var(--safe-bottom);
 }
 
 .reply-preview{
@@ -302,7 +301,7 @@ button.send-btn{
   cursor:pointer;
 }
 
-/* action menu */
+/* menu */
 .menu-overlay{
   position:fixed;
   inset:0;
@@ -352,7 +351,7 @@ button.send-btn{
 
 @media (max-width:420px){
   .header-inner{
-    min-height:56px;
+    min-height:54px;
     font-size:17px;
   }
 
@@ -374,13 +373,13 @@ button.send-btn{
 <body>
 
 <div class="app">
-  <header>
+  <header id="chatHeader">
     <div class="header-inner">الشات الخاص 🤍</div>
   </header>
 
   <div class="messages" id="messages"></div>
 
-  <div class="composer-shell">
+  <div class="composer-shell" id="composerShell">
     <div class="reply-preview hidden" id="replyPreview"></div>
 
     <footer>
@@ -398,6 +397,9 @@ button.send-btn{
 </div>
 
 <script>
+const root = document.documentElement;
+const headerEl = document.getElementById('chatHeader');
+const composerShell = document.getElementById('composerShell');
 const messagesEl = document.getElementById('messages');
 const input = document.getElementById('text');
 const sendBtn = document.getElementById('sendBtn');
@@ -436,6 +438,13 @@ function escapeHtml(str) {
     .replaceAll('>', '&gt;')
     .replaceAll('"', '&quot;')
     .replaceAll("'", '&#039;');
+}
+
+function syncLayoutHeights() {
+  const headerH = Math.ceil(headerEl.getBoundingClientRect().height);
+  const composerH = Math.ceil(composerShell.getBoundingClientRect().height);
+  root.style.setProperty('--header-total-h', `${headerH}px`);
+  root.style.setProperty('--composer-total-h', `${composerH}px`);
 }
 
 function getMsgById(id) {
@@ -486,12 +495,14 @@ function renderMessages() {
   });
 
   messagesEl.scrollTop = messagesEl.scrollHeight;
+  requestAnimationFrame(syncLayoutHeights);
 }
 
 function clearReplyPreview() {
   replyingToId = null;
   replyPreview.classList.add('hidden');
   replyPreview.innerHTML = '';
+  requestAnimationFrame(syncLayoutHeights);
 }
 
 function openReplyPreview(msgId) {
@@ -515,6 +526,7 @@ function openReplyPreview(msgId) {
   `;
 
   document.getElementById('closeReplyBtn').addEventListener('click', clearReplyPreview);
+  requestAnimationFrame(syncLayoutHeights);
   input.focus();
 }
 
@@ -725,7 +737,6 @@ function bindInteractions(wrap, msg) {
   });
 }
 
-/* keyboard behavior for all browsers */
 function hideKeyboard() {
   if (document.activeElement === input) {
     input.blur();
@@ -742,11 +753,27 @@ document.addEventListener('pointerdown', (e) => {
   hideKeyboard();
 });
 
-/* events */
+function preventPageDragWhenTyping(e) {
+  if (document.activeElement !== input) return;
+  if (e.target.closest('.messages')) return;
+  e.preventDefault();
+}
+
+document.addEventListener('touchmove', preventPageDragWhenTyping, { passive: false });
+
 sendBtn.addEventListener('click', sendMessage);
 
 input.addEventListener('keydown', (e) => {
   if (e.key === 'Enter') sendMessage();
+});
+
+input.addEventListener('focus', () => {
+  setTimeout(syncLayoutHeights, 60);
+  setTimeout(syncLayoutHeights, 220);
+});
+
+input.addEventListener('blur', () => {
+  setTimeout(syncLayoutHeights, 60);
 });
 
 menuOverlay.addEventListener('click', (e) => {
@@ -757,10 +784,15 @@ document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') closeMenu();
 });
 
+window.addEventListener('resize', syncLayoutHeights);
+window.addEventListener('orientationchange', () => {
+  setTimeout(syncLayoutHeights, 80);
+});
+window.visualViewport?.addEventListener('resize', syncLayoutHeights);
+
 renderMessages();
+syncLayoutHeights();
 </script>
 
 </body>
 </html>
-
-
