@@ -275,18 +275,19 @@ footer{
   gap:8px;
   padding:10px;
   background:var(--footer);
-  align-items:center;
+  align-items:flex-end;
   flex-wrap:nowrap;
   min-width:0;
   width:100%;
   max-width:100%;
   overflow:hidden;
 }
-
-input{
+  
+textarea{
   flex:1;
   min-width:0;
-  height:48px;
+  min-height:48px;
+  max-height:108px;
   border:none;
   outline:none;
   border-radius:14px;
@@ -294,6 +295,11 @@ input{
   font-size:16px;
   background:#fff;
   color:#111827;
+  resize:none;
+  overflow-y:auto;
+  line-height:1.45;
+  white-space:pre-wrap;
+  word-break:break-word;
 }
 
 button.send-btn{
@@ -472,9 +478,9 @@ button.send-btn{
     max-width:86%;
   }
 
-  input,
+  textarea,
   .send-btn{
-    height:46px;
+    min-height:46px;
   }
 
   .send-btn{
@@ -500,7 +506,7 @@ button.send-btn{
     <div class="reply-preview hidden" id="replyPreview"></div>
 
     <footer>
-      <input id="text" type="text" placeholder="اكتب رسالة..." autocomplete="off" />
+      <textarea id="text" placeholder="اكتب رسالة..." rows="1"></textarea>
       <button class="send-btn" id="sendBtn" type="button">إرسال</button>
     </footer>
   </div>
@@ -562,7 +568,11 @@ function escapeHtml(str) {
     .replaceAll("'", '&#039;');
 }
 
-
+function autoGrowTextarea() {
+  input.style.height = '48px';
+  const nextHeight = Math.min(input.scrollHeight, 108);
+  input.style.height = nextHeight + 'px';
+}
 
 function syncLayoutHeights() {
 
@@ -793,6 +803,7 @@ function sendMessage() {
     editingId = null;
     sendBtn.textContent = 'إرسال';
     input.value = '';
+    autoGrowTextarea();
     renderMessages();
     return;
   }
@@ -806,6 +817,7 @@ function sendMessage() {
   });
 
   input.value = '';
+  autoGrowTextarea();
   clearReplyPreview();
   renderMessages();
 }
@@ -974,10 +986,8 @@ document.addEventListener('contextmenu', (e) => {
 
 sendBtn.addEventListener('click', sendMessage);
 
-input.addEventListener('keydown', (e) => {
-  if (e.key === 'Enter') sendMessage();
-});
-
+input.addEventListener('input', autoGrowTextarea);
+  
 input.addEventListener('focus', () => {
   setTimeout(syncLayoutHeights, 60);
   setTimeout(syncLayoutHeights, 220);
@@ -1002,11 +1012,13 @@ window.addEventListener('orientationchange', () => {
 window.visualViewport?.addEventListener('resize', syncLayoutHeights);
   
 renderMessages();
+autoGrowTextarea();
 syncLayoutHeights();
 </script>
 
 </body>
 </html>
+
 
 
 
