@@ -304,14 +304,29 @@ textarea{
 
 button.send-btn{
   flex:0 0 auto;
-  min-width:72px;
+  width:48px;
+  min-width:48px;
   height:48px;
   border:none;
-  border-radius:14px;
+  border-radius:50%;
   background:#2563eb;
   color:#fff;
-  font-size:15px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
   cursor:pointer;
+  padding:0;
+}
+
+button.send-btn svg{
+  width:22px;
+  height:22px;
+  display:block;
+  fill:none;
+  stroke:currentColor;
+  stroke-width:2;
+  stroke-linecap:round;
+  stroke-linejoin:round;
 }
 
 .attach-btn{
@@ -562,13 +577,14 @@ button.send-btn{
     max-width:86%;
   }
 
-  textarea,
-  .send-btn{
+  textarea{
     min-height:46px;
-  }
+  }  
 
   .send-btn{
-    min-width:68px;
+    width:46px;
+    min-width:46px;
+    height:46px;
   }
   .messages{
     -webkit-user-select: none;
@@ -592,7 +608,7 @@ button.send-btn{
     <footer>
       <button class="attach-btn" id="attachBtn" type="button">＋</button>
       <textarea id="text" placeholder="اكتب رسالة..." rows="1"></textarea>
-      <button class="send-btn" id="sendBtn" type="button">إرسال</button>
+      <button class="send-btn" id="sendBtn" type="button" aria-label="إرسال أو تسجيل صوت"></button>
     </footer>
   </div>
 </div>
@@ -628,7 +644,7 @@ button.send-btn{
   
       <button class="attach-option" type="button" data-kind="audio">
         <span class="attach-option-icon">🎤</span>
-        <span class="attach-option-text">صوت</span>
+        <span class="attach-option-text">ملف صوت</span>
       </button>
     </div>
   </div>
@@ -680,12 +696,44 @@ function escapeHtml(str) {
     .replaceAll("'", '&#039;');
 }
 
-function autoGrowTextarea() {
-  input.style.height = '48px';
-  const nextHeight = Math.min(input.scrollHeight, 108);
-  input.style.height = nextHeight + 'px';
+function getActionButtonIcon(mode) {
+  if (mode === 'send') {
+    return `
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M22 2L11 13"></path>
+        <path d="M22 2L15 22L11 13L2 9L22 2Z"></path>
+      </svg>
+    `;
+  }
+
+  return `
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M12 3a3 3 0 0 1 3 3v6a3 3 0 0 1-6 0V6a3 3 0 0 1 3-3z"></path>
+      <path d="M19 11a7 7 0 0 1-14 0"></path>
+      <path d="M12 18v3"></path>
+      <path d="M8 21h8"></path>
+    </svg>
+  `;
 }
 
+function updateComposerActionButton() {
+  const hasText = input.value.trim().length > 0;
+  const mode = hasText ? 'send' : 'mic';
+
+  sendBtn.dataset.mode = mode;
+  sendBtn.innerHTML = getActionButtonIcon(mode);
+  sendBtn.setAttribute(
+    'aria-label',
+    mode === 'send' ? 'إرسال الرسالة' : 'تسجيل صوت'
+  );
+}
+  
+function autoGrowTextarea() {
+  input.style.height = '48px';
+  const nextHeight = Math.min(input.scrollHeight, 96);
+  input.style.height = nextHeight + 'px';
+}
+  
 function syncLayoutHeights() {
 
   const headerH = Math.ceil(headerEl.getBoundingClientRect().height);
@@ -756,7 +804,6 @@ function clearReplyPreview() {
 function openReplyPreview(msgId) {
   replyingToId = msgId;
   editingId = null;
-  sendBtn.textContent = 'إرسال';
 
   const msg = getMsgById(msgId);
   const name = msg?.mine ? 'أنت' : 'الطرف الآخر';
@@ -898,8 +945,9 @@ function editMessage(id) {
   editingId = id;
   clearReplyPreview();
   input.value = msg.text;
+  autoGrowTextarea();
+  updateComposerActionButton();
   input.focus();
-  sendBtn.textContent = 'حفظ';
 }
 
 function deleteMessage(id) {
@@ -921,9 +969,9 @@ function sendMessage() {
       msg.edited = true;
     }
     editingId = null;
-    sendBtn.textContent = 'إرسال';
     input.value = '';
     autoGrowTextarea();
+    updateComposerActionButton();
     renderMessages();
     return;
   }
@@ -938,6 +986,7 @@ function sendMessage() {
 
   input.value = '';
   autoGrowTextarea();
+  updateComposerActionButton();
   clearReplyPreview();
   renderMessages();
 }
@@ -1127,9 +1176,21 @@ document.querySelectorAll('.attach-option').forEach(btn => {
   });
 });
   
-sendBtn.addEventListener('click', sendMessage);
+sendBtn.addEventListener('click', () => {
+  const mode = sendBtn.dataset.mode;
 
-input.addEventListener('input', autoGrowTextarea);
+  if (mode === 'send') {
+    sendMessage();
+    return;
+  }
+
+  alert('هنا لاحقًا سنربط تسجيل الصوت');
+});
+
+input.addEventListener('input', () => {
+  autoGrowTextarea();
+  updateComposerActionButton();
+});
   
 input.addEventListener('focus', () => {
   setTimeout(syncLayoutHeights, 60);
@@ -1156,6 +1217,7 @@ window.visualViewport?.addEventListener('resize', syncLayoutHeights);
   
 renderMessages();
 autoGrowTextarea();
+updateComposerActionButton();
 syncLayoutHeights();
 </script>
 
