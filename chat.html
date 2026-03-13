@@ -287,7 +287,7 @@ textarea{
   flex:1;
   min-width:0;
   min-height:48px;
-  max-height:108px;
+  max-height:96px;
   border:none;
   outline:none;
   border-radius:14px;
@@ -606,7 +606,7 @@ button.send-btn svg{
     <div class="reply-preview hidden" id="replyPreview"></div>
 
     <footer>
-      <button class="attach-btn" id="attachBtn" type="button">＋</button>
+      <button class="attach-btn" id="attachBtn" type="button" aria-label="إضافة مرفق">+</button>
       <textarea id="text" placeholder="اكتب رسالة..." rows="1"></textarea>
       <button class="send-btn" id="sendBtn" type="button" aria-label="إرسال أو تسجيل صوت"></button>
     </footer>
@@ -1135,7 +1135,10 @@ document.addEventListener('selectstart', (e) => {
     e.target.closest('.msg-wrap') ||
     e.target.closest('.menu-overlay') ||
     e.target.closest('.menu-sheet') ||
-    e.target.closest('.menu-btn')
+    e.target.closest('.menu-btn') ||
+    e.target.closest('.attach-overlay') ||
+    e.target.closest('.attach-sheet') ||
+    e.target.closest('.attach-option')
   ) {
     e.preventDefault();
   }
@@ -1147,7 +1150,10 @@ document.addEventListener('contextmenu', (e) => {
     e.target.closest('.msg-wrap') ||
     e.target.closest('.menu-overlay') ||
     e.target.closest('.menu-sheet') ||
-    e.target.closest('.menu-btn')
+    e.target.closest('.menu-btn') ||
+    e.target.closest('.attach-overlay') ||
+    e.target.closest('.attach-sheet') ||
+    e.target.closest('.attach-option')
   ) {
     e.preventDefault();
   }
@@ -1172,7 +1178,7 @@ document.querySelectorAll('.attach-option').forEach(btn => {
     if (kind === 'image') alert('هنا لاحقًا سنربط اختيار صورة');
     if (kind === 'video') alert('هنا لاحقًا سنربط اختيار فيديو');
     if (kind === 'file') alert('هنا لاحقًا سنربط اختيار ملف');
-    if (kind === 'audio') alert('هنا لاحقًا سنربط تسجيل/إرسال صوت');
+    if (kind === 'audio') alert('هنا لاحقًا سنربط اختيار ملف صوت');
   });
 });
   
