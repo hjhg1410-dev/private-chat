@@ -312,70 +312,9 @@ button.send-btn{
 .menu-overlay{
   position:fixed;
   inset:0;
-  background:rgba(0,0,0,.34);
-  display:none;
-  align-items:flex-end;
-  justify-content:center;
-  padding:14px;
-  z-index:1000;
-
-  -webkit-user-select:none;
-  user-select:none;
-  -webkit-touch-callout:none;
-}
-
-.menu-sheet{
-  width:min(460px,100%);
-  background:#111827;
-  border:1px solid rgba(255,255,255,.08);
-  border-radius:18px;
-  overflow:hidden;
-  box-shadow:0 20px 50px rgba(0,0,0,.35);
-
-  -webkit-user-select:none;
-  user-select:none;
-  -webkit-touch-callout:none;
-}
-
-.menu-head{
-  padding:14px 16px;
-  border-bottom:1px solid rgba(255,255,255,.06);
-  font-size:13px;
-  color:var(--muted);
-
-  -webkit-user-select:none;
-  user-select:none;
-  -webkit-touch-callout:none;
-}
-
-.menu-btn{
-  width:100%;
-  background:transparent;
-  border:none;
-  color:#fff;
-  text-align:right;
-  padding:16px;
-  font-size:16px;
-  cursor:pointer;
-  border-bottom:1px solid rgba(255,255,255,.06);
-
-  -webkit-user-select:none;
-  user-select:none;
-  -webkit-touch-callout:none;
-}
-
-.menu-btn:last-child{
-  border-bottom:none;
-}
-
-.menu-btn.danger{
-  color:#fca5a5;
-}
-
-  .menu-overlay{
-  position:fixed;
-  inset:0;
-  background:rgba(0,0,0,.42);
+  background:rgba(0,0,0,.72);
+  backdrop-filter:blur(8px);
+  -webkit-backdrop-filter:blur(8px);
   display:none;
   align-items:center;
   justify-content:center;
@@ -388,10 +327,11 @@ button.send-btn{
 }
 
 .menu-center{
-  width:min(460px, 100%);
+  width:min(300px, calc(100% - 32px));
   display:flex;
   flex-direction:column;
-  gap:12px;
+  gap:10px;
+  margin-inline:auto;
 }
 
 .menu-message-preview{
@@ -402,7 +342,7 @@ button.send-btn{
 }
 
 .menu-message-preview .preview-bubble{
-  max-width:80%;
+  max-width:78%;
   padding:10px 12px 8px;
   border-radius:16px;
   box-shadow:0 10px 24px rgba(0,0,0,.28);
@@ -442,7 +382,7 @@ button.send-btn{
   width:100%;
   background:#111827;
   border:1px solid rgba(255,255,255,.08);
-  border-radius:18px;
+  border-radius:16px;
   overflow:hidden;
   box-shadow:0 20px 50px rgba(0,0,0,.35);
 
@@ -451,6 +391,40 @@ button.send-btn{
   -webkit-touch-callout:none;
 }
 
+.menu-head{
+  padding:11px 14px;
+  border-bottom:1px solid rgba(255,255,255,.06);
+  font-size:12px;
+  color:var(--muted);
+
+  -webkit-user-select:none;
+  user-select:none;
+  -webkit-touch-callout:none;
+}
+
+.menu-btn{
+  width:100%;
+  background:transparent;
+  border:none;
+  color:#fff;
+  text-align:right;
+  padding:12px 14px;
+  font-size:15px;
+  cursor:pointer;
+  border-bottom:1px solid rgba(255,255,255,.06);
+
+  -webkit-user-select:none;
+  user-select:none;
+  -webkit-touch-callout:none;
+}
+
+.menu-btn:last-child{
+  border-bottom:none;
+}
+
+.menu-btn.danger{
+  color:#fca5a5;
+}
 @media (max-width:420px){
   .header-inner{
     min-height:54px;
@@ -941,6 +915,7 @@ syncLayoutHeights();
 
 </body>
 </html>
+
 
 
 
