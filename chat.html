@@ -156,6 +156,10 @@ header{
   overflow-wrap:anywhere;
   position:relative;
   box-shadow:0 6px 14px rgba(0,0,0,.16);
+
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
 }
 
 .msg.me{
@@ -194,6 +198,9 @@ header{
   white-space:pre-wrap;
   line-height:1.45;
   font-size:15px;
+  
+  -webkit-user-select: none;
+  user-select: none;
 }
 
 .msg-meta{
@@ -366,6 +373,10 @@ button.send-btn{
 
   .send-btn{
     min-width:68px;
+  }
+  .messages{
+    -webkit-user-select: none;
+    user-select: none;
   }
 }
 </style>
@@ -800,6 +811,7 @@ syncLayoutHeights();
 
 </body>
 </html>
+
 
 
 
