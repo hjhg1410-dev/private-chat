@@ -359,19 +359,16 @@ button.send-btn svg{
 }
 
 .attach-sheet{
-  width:min(320px, calc(100% - 32px));
+  width:min(260px, calc(100% - 40px));
   background:#111827;
   border:1px solid rgba(255,255,255,.08);
-  border-radius:18px;
+  border-radius:14px;
   overflow:hidden;
   box-shadow:0 20px 50px rgba(0,0,0,.35);
 }
 
 .attach-head{
-  padding:12px 14px;
-  border-bottom:1px solid rgba(255,255,255,.06);
-  font-size:12px;
-  color:var(--muted);
+  display:none;
 }
 
 .attach-option{
@@ -381,12 +378,14 @@ button.send-btn svg{
   color:#fff;
   display:flex;
   align-items:center;
-  gap:12px;
+  justify-content:flex-start;
+  gap:8px;
   text-align:right;
-  padding:14px;
-  font-size:15px;
+  padding:11px 12px;
+  font-size:14px;
   cursor:pointer;
   border-bottom:1px solid rgba(255,255,255,.06);
+  flex-direction:row-reverse;
 }
 
 .attach-option:last-child{
@@ -394,11 +393,11 @@ button.send-btn svg{
 }
 
 .attach-option-icon{
-  width:22px;
+  width:18px;
   display:inline-flex;
   align-items:center;
   justify-content:center;
-  font-size:18px;
+  font-size:16px;
 }
 
 .attach-option-text{
@@ -432,13 +431,13 @@ button.send-btn svg{
 }
 
 .menu-center{
-  width:min(300px, calc(100% - 32px));
+  width:min(260px, calc(100% - 40px));
   display:flex;
   flex-direction:column;
-  gap:10px;
+  gap:8px;
   margin-inline:auto;
 }
-
+  
 .menu-message-preview{
   display:flex;
   justify-content:flex-end;
@@ -447,10 +446,10 @@ button.send-btn svg{
 }
 
 .menu-message-preview .preview-bubble{
-  max-width:78%;
-  max-height:180px;
-  padding:10px 12px 8px;
-  border-radius:16px;
+  max-width:74%;
+  max-height:170px;
+  padding:9px 11px 8px;
+  border-radius:15px;
   box-shadow:0 10px 24px rgba(0,0,0,.28);
   word-break:break-word;
   overflow-wrap:anywhere;
@@ -489,7 +488,7 @@ button.send-btn svg{
   width:100%;
   background:#111827;
   border:1px solid rgba(255,255,255,.08);
-  border-radius:16px;
+  border-radius:14px;
   overflow:hidden;
   box-shadow:0 20px 50px rgba(0,0,0,.35);
 
@@ -499,16 +498,9 @@ button.send-btn svg{
 }
 
 .menu-head{
-  padding:11px 14px;
-  border-bottom:1px solid rgba(255,255,255,.06);
-  font-size:12px;
-  color:var(--muted);
-
-  -webkit-user-select:none;
-  user-select:none;
-  -webkit-touch-callout:none;
+  display:none;
 }
-
+  
 .menu-btn{
   width:100%;
   background:transparent;
@@ -516,11 +508,10 @@ button.send-btn svg{
   color:#fff;
   display:flex;
   align-items:center;
-  justify-content:space-between;
-  gap:12px;
+  justify-content:flex-start;
   text-align:right;
-  padding:12px 14px;
-  font-size:15px;
+  padding:11px 12px;
+  font-size:14px;
   cursor:pointer;
   border-bottom:1px solid rgba(255,255,255,.06);
 
@@ -532,15 +523,16 @@ button.send-btn svg{
 .menu-btn-label{
   display:flex;
   align-items:center;
-  gap:10px;
+  gap:8px;
   min-width:0;
-  flex:1;
+  flex:0 0 auto;
+  flex-direction:row-reverse;
 }
 
 .menu-btn-icon{
-  width:18px;
-  height:18px;
-  flex:0 0 18px;
+  width:16px;
+  height:16px;
+  flex:0 0 16px;
   display:inline-flex;
   align-items:center;
   justify-content:center;
@@ -548,8 +540,8 @@ button.send-btn svg{
 }
 
 .menu-btn-icon svg{
-  width:18px;
-  height:18px;
+  width:16px;
+  height:16px;
   display:block;
   fill:none;
   stroke:currentColor;
