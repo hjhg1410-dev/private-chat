@@ -227,7 +227,71 @@ header{
 .reply-preview{
   padding:8px 10px 0;
 }
+.attachment-preview{
+  padding:8px 10px 0;
+}
 
+.attachment-preview-box{
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:10px;
+  background:#111827;
+  border:1px solid rgba(255,255,255,.07);
+  border-radius:12px;
+  padding:10px 12px;
+}
+
+.attachment-preview-main{
+  min-width:0;
+  flex:1;
+  display:flex;
+  flex-direction:column;
+  gap:8px;
+}
+
+.attachment-preview-title{
+  font-size:12px;
+  font-weight:bold;
+  color:var(--muted);
+}
+
+.attachment-preview-meta{
+  font-size:13px;
+  color:#fff;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+
+.attachment-preview-close{
+  background:transparent;
+  border:none;
+  color:#fff;
+  font-size:18px;
+  line-height:1;
+  cursor:pointer;
+  padding:0;
+}
+
+.attachment-preview-thumb{
+  max-width:120px;
+  max-height:90px;
+  border-radius:10px;
+  display:block;
+  object-fit:cover;
+  border:1px solid rgba(255,255,255,.08);
+}
+
+.attachment-preview-video{
+  width:160px;
+  max-width:100%;
+  max-height:120px;
+  border-radius:10px;
+  display:block;
+  background:#000;
+  border:1px solid rgba(255,255,255,.08);
+}
 .reply-preview-box{
   display:flex;
   align-items:flex-start;
@@ -596,6 +660,7 @@ button.send-btn svg{
 
   <div class="composer-shell" id="composerShell">
     <div class="reply-preview hidden" id="replyPreview"></div>
+    <div class="attachment-preview hidden" id="attachmentPreview"></div>
 
     <footer>
       <input id="imagePicker" type="file" accept="image/*" class="hidden" />
@@ -659,6 +724,7 @@ const attachBtn = document.getElementById('attachBtn');
 const input = document.getElementById('text');
 const sendBtn = document.getElementById('sendBtn');
 const replyPreview = document.getElementById('replyPreview');
+const attachmentPreview = document.getElementById('attachmentPreview');
 const menuOverlay = document.getElementById('menuOverlay');
 const menuHead = document.getElementById('menuHead');
 const menuActions = document.getElementById('menuActions');
@@ -668,7 +734,9 @@ const attachOverlay = document.getElementById('attachOverlay');
 let replyingToId = null;
 let editingId = null;
 let menuTargetId = null;
-
+let selectedAttachment = null;
+let selectedAttachmentUrl = '';
+  
 let longPressTimer = null;
 let pressStartX = 0;
 let pressStartY = 0;
@@ -929,6 +997,66 @@ function closeAttachSheet() {
   attachOverlay.style.display = 'none';
 }
 
+function clearSelectedAttachment() {
+  selectedAttachment = null;
+
+  if (selectedAttachmentUrl) {
+    URL.revokeObjectURL(selectedAttachmentUrl);
+    selectedAttachmentUrl = '';
+  }
+
+  attachmentPreview.classList.add('hidden');
+  attachmentPreview.innerHTML = '';
+  requestAnimationFrame(syncLayoutHeights);
+}
+
+function updateAttachmentPreview() {
+  if (!selectedAttachment) {
+    attachmentPreview.classList.add('hidden');
+    attachmentPreview.innerHTML = '';
+    requestAnimationFrame(syncLayoutHeights);
+    return;
+  }
+
+  if (selectedAttachmentUrl) {
+    URL.revokeObjectURL(selectedAttachmentUrl);
+    selectedAttachmentUrl = '';
+  }
+
+  const file = selectedAttachment;
+  const type = file.type || '';
+  let previewMedia = '';
+
+  if (type.startsWith('image/')) {
+    selectedAttachmentUrl = URL.createObjectURL(file);
+    previewMedia = `<img class="attachment-preview-thumb" src="${selectedAttachmentUrl}" alt="معاينة صورة">`;
+  } else if (type.startsWith('video/')) {
+    selectedAttachmentUrl = URL.createObjectURL(file);
+    previewMedia = `<video class="attachment-preview-video" src="${selectedAttachmentUrl}" controls playsinline preload="metadata"></video>`;
+  }
+
+  attachmentPreview.classList.remove('hidden');
+  attachmentPreview.innerHTML = `
+    <div class="attachment-preview-box">
+      <div class="attachment-preview-main">
+        <div class="attachment-preview-title">مرفق جاهز للإرسال</div>
+        ${previewMedia}
+        <div class="attachment-preview-meta">${escapeHtml(file.name)}</div>
+      </div>
+      <button class="attachment-preview-close" id="clearAttachmentBtn" type="button">×</button>
+    </div>
+  `;
+
+  document.getElementById('clearAttachmentBtn').addEventListener('click', clearSelectedAttachment);
+  requestAnimationFrame(syncLayoutHeights);
+}
+
+function handlePickedFile(file, kindLabel) {
+  if (!file) return;
+  selectedAttachment = file;
+  updateAttachmentPreview();
+}
+
 function handlePickedFile(file, kindLabel) {
   if (!file) return;
   alert(`تم اختيار ${kindLabel}: ${file.name}`);
@@ -950,6 +1078,7 @@ function editMessage(id) {
 
   editingId = id;
   clearReplyPreview();
+  clearSelectedAttachment();
   input.value = msg.text;
   autoGrowTextarea();
   updateComposerActionButton();
@@ -978,6 +1107,7 @@ function sendMessage() {
     input.value = '';
     autoGrowTextarea();
     updateComposerActionButton();
+    clearSelectedAttachment();
     renderMessages();
     return;
   }
@@ -994,6 +1124,7 @@ function sendMessage() {
   autoGrowTextarea();
   updateComposerActionButton();
   clearReplyPreview();
+  clearSelectedAttachment();
   renderMessages();
 }
 
