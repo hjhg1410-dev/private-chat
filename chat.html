@@ -598,6 +598,11 @@ button.send-btn svg{
     <div class="reply-preview hidden" id="replyPreview"></div>
 
     <footer>
+      <input id="imagePicker" type="file" accept="image/*" class="hidden" />
+      <input id="videoPicker" type="file" accept="video/*" class="hidden" />
+      <input id="filePicker" type="file" class="hidden" />
+      <input id="audioPicker" type="file" accept="audio/*" class="hidden" />
+    
       <button class="attach-btn" id="attachBtn" type="button" aria-label="إضافة مرفق">+</button>
       <textarea id="text" placeholder="اكتب رسالة..." rows="1"></textarea>
       <button class="send-btn" id="sendBtn" type="button" aria-label="إرسال أو تسجيل صوت"></button>
@@ -646,6 +651,10 @@ const root = document.documentElement;
 const headerEl = document.getElementById('chatHeader');
 const composerShell = document.getElementById('composerShell');
 const messagesEl = document.getElementById('messages');
+const imagePicker = document.getElementById('imagePicker');
+const videoPicker = document.getElementById('videoPicker');
+const filePicker = document.getElementById('filePicker');
+const audioPicker = document.getElementById('audioPicker');
 const attachBtn = document.getElementById('attachBtn');
 const input = document.getElementById('text');
 const sendBtn = document.getElementById('sendBtn');
@@ -920,6 +929,11 @@ function closeAttachSheet() {
   attachOverlay.style.display = 'none';
 }
 
+function handlePickedFile(file, kindLabel) {
+  if (!file) return;
+  alert(`تم اختيار ${kindLabel}: ${file.name}`);
+}
+
 async function copyMessage(id) {
   const msg = getMsgById(id);
   if (!msg) return;
@@ -1167,11 +1181,31 @@ document.querySelectorAll('.attach-option').forEach(btn => {
     const kind = btn.dataset.kind;
     closeAttachSheet();
 
-    if (kind === 'image') alert('هنا لاحقًا سنربط اختيار صورة');
-    if (kind === 'video') alert('هنا لاحقًا سنربط اختيار فيديو');
-    if (kind === 'file') alert('هنا لاحقًا سنربط اختيار ملف');
-    if (kind === 'audio') alert('هنا لاحقًا سنربط اختيار ملف صوت');
+    if (kind === 'image') imagePicker.click();
+    if (kind === 'video') videoPicker.click();
+    if (kind === 'file') filePicker.click();
+    if (kind === 'audio') audioPicker.click();
   });
+});
+
+imagePicker.addEventListener('change', () => {
+  handlePickedFile(imagePicker.files?.[0], 'صورة');
+  imagePicker.value = '';
+});
+
+videoPicker.addEventListener('change', () => {
+  handlePickedFile(videoPicker.files?.[0], 'فيديو');
+  videoPicker.value = '';
+});
+
+filePicker.addEventListener('change', () => {
+  handlePickedFile(filePicker.files?.[0], 'ملف');
+  filePicker.value = '';
+});
+
+audioPicker.addEventListener('change', () => {
+  handlePickedFile(audioPicker.files?.[0], 'ملف صوت');
+  audioPicker.value = '';
 });
   
 sendBtn.addEventListener('click', () => {
