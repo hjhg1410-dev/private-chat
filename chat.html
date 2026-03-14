@@ -231,6 +231,67 @@ header{
   padding:8px 10px 0;
 }
 
+.recording-preview{
+  padding:8px 10px 0;
+}
+
+.recording-preview-box{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  background:#111827;
+  border:1px solid rgba(255,255,255,.07);
+  border-radius:12px;
+  padding:10px 12px;
+}
+
+.recording-preview-main{
+  min-width:0;
+  flex:1;
+  display:flex;
+  align-items:center;
+  gap:10px;
+}
+
+.recording-dot{
+  width:10px;
+  height:10px;
+  border-radius:50%;
+  background:#ef4444;
+  flex:0 0 10px;
+  animation:recordPulse 1s infinite;
+}
+
+.recording-label{
+  font-size:13px;
+  font-weight:bold;
+  color:#fff;
+  white-space:nowrap;
+}
+
+.recording-time{
+  font-size:13px;
+  color:var(--muted);
+  white-space:nowrap;
+}
+
+.recording-cancel{
+  background:transparent;
+  border:none;
+  color:#fff;
+  font-size:18px;
+  line-height:1;
+  cursor:pointer;
+  padding:0;
+}
+
+@keyframes recordPulse{
+  0%{ opacity:1; }
+  50%{ opacity:.45; }
+  100%{ opacity:1; }
+}
+
 .attachment-preview-box{
   display:flex;
   align-items:flex-start;
@@ -661,6 +722,7 @@ button.send-btn svg{
   <div class="composer-shell" id="composerShell">
     <div class="reply-preview hidden" id="replyPreview"></div>
     <div class="attachment-preview hidden" id="attachmentPreview"></div>
+    <div class="recording-preview hidden" id="recordingPreview"></div>
 
     <footer>
       <input id="imagePicker" type="file" accept="image/*" class="hidden" />
@@ -725,6 +787,7 @@ const input = document.getElementById('text');
 const sendBtn = document.getElementById('sendBtn');
 const replyPreview = document.getElementById('replyPreview');
 const attachmentPreview = document.getElementById('attachmentPreview');
+const recordingPreview = document.getElementById('recordingPreview');
 const menuOverlay = document.getElementById('menuOverlay');
 const menuHead = document.getElementById('menuHead');
 const menuActions = document.getElementById('menuActions');
@@ -736,6 +799,12 @@ let editingId = null;
 let menuTargetId = null;
 let selectedAttachment = null;
 let selectedAttachmentUrl = '';
+let mediaRecorder = null;
+let mediaStream = null;
+let recordedChunks = [];
+let isRecording = false;
+let recordingTimer = null;
+let recordingSeconds = 0;
   
 let longPressTimer = null;
 let pressStartX = 0;
@@ -775,6 +844,14 @@ function getActionButtonIcon(mode) {
     `;
   }
 
+  if (mode === 'stop') {
+    return `
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <rect x="7" y="7" width="10" height="10" rx="2"></rect>
+      </svg>
+    `;
+  }
+
   return `
     <svg viewBox="0 0 24 24" aria-hidden="true">
       <path d="M12 3a3 3 0 0 1 3 3v6a3 3 0 0 1-6 0V6a3 3 0 0 1 3-3z"></path>
@@ -787,14 +864,18 @@ function getActionButtonIcon(mode) {
 
 function updateComposerActionButton() {
   const hasText = input.value.trim().length > 0;
-  const mode = hasText ? 'send' : 'mic';
+  const mode = isRecording ? 'stop' : (hasText ? 'send' : 'mic');
 
   sendBtn.dataset.mode = mode;
   sendBtn.innerHTML = getActionButtonIcon(mode);
-  sendBtn.setAttribute(
-    'aria-label',
-    mode === 'send' ? 'إرسال الرسالة' : 'تسجيل صوت'
-  );
+
+  if (mode === 'send') {
+    sendBtn.setAttribute('aria-label', 'إرسال الرسالة');
+  } else if (mode === 'stop') {
+    sendBtn.setAttribute('aria-label', 'إيقاف التسجيل');
+  } else {
+    sendBtn.setAttribute('aria-label', 'تسجيل صوت');
+  }
 }
   
 function autoGrowTextarea() {
@@ -997,6 +1078,128 @@ function closeAttachSheet() {
   attachOverlay.style.display = 'none';
 }
 
+function formatRecordingTime(totalSeconds) {
+  const mins = Math.floor(totalSeconds / 60);
+  const secs = totalSeconds % 60;
+  return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+}
+
+function stopMediaTracks() {
+  if (mediaStream) {
+    mediaStream.getTracks().forEach(track => track.stop());
+    mediaStream = null;
+  }
+}
+
+function updateRecordingPreview() {
+  if (!isRecording) {
+    recordingPreview.classList.add('hidden');
+    recordingPreview.innerHTML = '';
+    requestAnimationFrame(syncLayoutHeights);
+    return;
+  }
+
+  recordingPreview.classList.remove('hidden');
+  recordingPreview.innerHTML = `
+    <div class="recording-preview-box">
+      <div class="recording-preview-main">
+        <span class="recording-dot"></span>
+        <span class="recording-label">جارٍ تسجيل الصوت</span>
+        <span class="recording-time">${formatRecordingTime(recordingSeconds)}</span>
+      </div>
+      <button class="recording-cancel" id="cancelRecordingBtn" type="button">×</button>
+    </div>
+  `;
+
+  document.getElementById('cancelRecordingBtn').addEventListener('click', cancelRecording);
+  requestAnimationFrame(syncLayoutHeights);
+}
+
+async function startRecording() {
+  if (selectedAttachment) {
+    clearSelectedAttachment();
+  }
+
+  if (editingId) {
+    return;
+  }
+
+  try {
+    mediaStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    mediaRecorder = new MediaRecorder(mediaStream);
+    recordedChunks = [];
+    recordingSeconds = 0;
+
+    mediaRecorder.addEventListener('dataavailable', (event) => {
+      if (event.data && event.data.size > 0) {
+        recordedChunks.push(event.data);
+      }
+    });
+
+    mediaRecorder.addEventListener('stop', () => {
+      const mimeType = mediaRecorder?.mimeType || 'audio/webm';
+      const ext = mimeType.includes('ogg') ? 'ogg' : 'webm';
+      const audioBlob = new Blob(recordedChunks, { type: mimeType });
+      selectedAttachment = new File([audioBlob], `recording_${Date.now()}.${ext}`, { type: mimeType });
+      updateAttachmentPreview();
+      stopMediaTracks();
+      mediaRecorder = null;
+      recordedChunks = [];
+    });
+
+    mediaRecorder.start();
+    isRecording = true;
+    updateComposerActionButton();
+    updateRecordingPreview();
+
+    recordingTimer = setInterval(() => {
+      recordingSeconds += 1;
+      updateRecordingPreview();
+    }, 1000);
+  } catch (err) {
+    alert('تعذر الوصول إلى الميكروفون');
+    stopMediaTracks();
+  }
+}
+
+function stopRecording() {
+  if (!isRecording || !mediaRecorder) return;
+
+  isRecording = false;
+
+  if (recordingTimer) {
+    clearInterval(recordingTimer);
+    recordingTimer = null;
+  }
+
+  updateComposerActionButton();
+  updateRecordingPreview();
+  mediaRecorder.stop();
+}
+
+function cancelRecording() {
+  if (!isRecording) return;
+
+  isRecording = false;
+
+  if (recordingTimer) {
+    clearInterval(recordingTimer);
+    recordingTimer = null;
+  }
+
+  if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+    mediaRecorder.stop();
+  }
+
+  mediaRecorder = null;
+  recordedChunks = [];
+  recordingSeconds = 0;
+  stopMediaTracks();
+  clearSelectedAttachment();
+  updateComposerActionButton();
+  updateRecordingPreview();
+}
+
 function clearSelectedAttachment() {
   selectedAttachment = null;
 
@@ -1007,6 +1210,12 @@ function clearSelectedAttachment() {
 
   attachmentPreview.classList.add('hidden');
   attachmentPreview.innerHTML = '';
+
+  if (!isRecording) {
+    recordingPreview.classList.add('hidden');
+    recordingPreview.innerHTML = '';
+  }
+
   requestAnimationFrame(syncLayoutHeights);
 }
 
@@ -1053,6 +1262,11 @@ function updateAttachmentPreview() {
 
 function handlePickedFile(file, kindLabel) {
   if (!file) return;
+
+  if (isRecording) {
+    cancelRecording();
+  }
+
   selectedAttachment = file;
   updateAttachmentPreview();
 }
@@ -1292,6 +1506,7 @@ document.addEventListener('contextmenu', (e) => {
 });
 
 attachBtn.addEventListener('click', () => {
+  if (isRecording) return;
   hideKeyboard();
   openAttachSheet();
 });
@@ -1342,7 +1557,12 @@ sendBtn.addEventListener('click', () => {
     return;
   }
 
-  alert('هنا لاحقًا سنربط تسجيل الصوت');
+  if (mode === 'stop') {
+    stopRecording();
+    return;
+  }
+
+  startRecording();
 });
 
 input.addEventListener('input', () => {
