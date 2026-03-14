@@ -1057,11 +1057,6 @@ function handlePickedFile(file, kindLabel) {
   updateAttachmentPreview();
 }
 
-function handlePickedFile(file, kindLabel) {
-  if (!file) return;
-  alert(`تم اختيار ${kindLabel}: ${file.name}`);
-}
-
 async function copyMessage(id) {
   const msg = getMsgById(id);
   if (!msg) return;
