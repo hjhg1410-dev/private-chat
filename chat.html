@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-<title>اختبار شات محسن</title>
+<title>اختبار شات</title>
 
 <style>
 :root{
@@ -414,6 +414,25 @@ header{
   text-overflow:ellipsis;
 }
 
+  .media-viewer{
+  position:fixed;
+  inset:0;
+  background:rgba(0,0,0,.88);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:20px;
+  z-index:2000;
+}
+
+.media-viewer-image{
+  max-width:95vw;
+  max-height:90vh;
+  border-radius:14px;
+  display:block;
+  box-shadow:0 20px 60px rgba(0,0,0,.5);
+}
+  
 .reply-close{
   background:transparent;
   border:none;
@@ -802,7 +821,11 @@ button.send-btn svg{
       </button>
     </div>
   </div>
-
+  
+  <div class="media-viewer hidden" id="mediaViewer">
+    <img id="mediaViewerImage" class="media-viewer-image" alt="عرض الصورة">
+  </div>
+  
 <script>
 const root = document.documentElement;
 const headerEl = document.getElementById('chatHeader');
@@ -957,43 +980,50 @@ function renderReplySnippet(msg) {
   `;
 }
 
-function renderMessageContent(msg){
+function renderMessageContent(msg) {
+  const textHtml = msg.text
+    ? `<div class="msg-text">${escapeHtml(msg.text)}</div>`
+    : '';
 
-  if(msg.type === 'image'){
+  if (msg.type === 'image') {
     return `
       <div class="msg-media">
-        <img src="${msg.file}" class="msg-image">
+        <img src="${msg.file}" class="msg-image" data-full-image="${msg.file}">
       </div>
+      ${textHtml}
     `;
   }
 
-  if(msg.type === 'video'){
+  if (msg.type === 'video') {
     return `
       <div class="msg-media">
         <video src="${msg.file}" controls class="msg-video"></video>
       </div>
+      ${textHtml}
     `;
   }
 
-  if(msg.type === 'audio'){
+  if (msg.type === 'audio') {
     return `
       <div class="msg-media">
         <audio src="${msg.file}" controls class="msg-audio"></audio>
       </div>
+      ${textHtml}
     `;
   }
 
-  if(msg.type === 'file'){
+  if (msg.type === 'file') {
     return `
       <div class="msg-file">
-        📎 ${escapeHtml(msg.fileName)}
+        📎 ${escapeHtml(msg.fileName || 'ملف')}
       </div>
+      ${textHtml}
     `;
   }
 
-  return `<div class="msg-text">${escapeHtml(msg.text)}</div>`;
+  return textHtml || `<div class="msg-text"></div>`;
 }
-
+  
 function renderMessages() {
   messagesEl.innerHTML = '';
 
