@@ -220,6 +220,8 @@ header{
   max-width:220px;
   border-radius:10px;
   display:block;
+  -webkit-user-drag:none;
+  user-select:none;
 }
 
 .msg-video{
@@ -878,6 +880,8 @@ const SWIPE_MAX = 90;
 const LONG_PRESS_MS = 380;
 const MOVE_CANCEL = 10;
 
+// بيانات محلية مؤقتة للاختبار فقط
+// سيتم استبدالها لاحقًا ببيانات Supabase
 const data = [
   { id: 1, mine: false, text: 'السلام عليكم', time: '10:10 ص' },
   { id: 2, mine: true, text: 'وعليكم السلام 🤍', time: '10:11 ص' },
@@ -1004,7 +1008,7 @@ function renderMessageContent(msg) {
   if (msg.type === 'video') {
     return `
       <div class="msg-media">
-        <video src="${msg.file}" controls class="msg-video"></video>
+        <video src="${msg.file}" controls playsinline class="msg-video"></video>
       </div>
       ${textHtml}
     `;
@@ -1395,7 +1399,7 @@ function updateAttachmentPreview() {
   requestAnimationFrame(syncLayoutHeights);
 }
 
-function handlePickedFile(file, kindLabel) {
+function handlePickedFile(file) {
   if (!file) return;
 
   if (isRecording) {
@@ -1691,22 +1695,22 @@ document.querySelectorAll('.attach-option').forEach(btn => {
 });
 
 imagePicker.addEventListener('change', () => {
-  handlePickedFile(imagePicker.files?.[0], 'صورة');
+  handlePickedFile(imagePicker.files?.[0]);
   imagePicker.value = '';
 });
 
 videoPicker.addEventListener('change', () => {
-  handlePickedFile(videoPicker.files?.[0], 'فيديو');
+  handlePickedFile(videoPicker.files?.[0]);
   videoPicker.value = '';
 });
 
 filePicker.addEventListener('change', () => {
-  handlePickedFile(filePicker.files?.[0], 'ملف');
+  handlePickedFile(filePicker.files?.[0]);
   filePicker.value = '';
 });
 
 audioPicker.addEventListener('change', () => {
-  handlePickedFile(audioPicker.files?.[0], 'ملف صوت');
+  handlePickedFile(audioPicker.files?.[0]);
   audioPicker.value = '';
 });
   
