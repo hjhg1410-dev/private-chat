@@ -212,6 +212,29 @@ header{
   color:rgba(255,255,255,.82);
 }
 
+.msg-media{
+  padding:4px 2px 2px;
+}
+
+.msg-image{
+  max-width:220px;
+  border-radius:10px;
+  display:block;
+}
+
+.msg-video{
+  max-width:220px;
+  border-radius:10px;
+  display:block;
+}
+
+.msg-audio{
+  width:220px;
+}
+
+.msg-file{
+  font-size:14px;
+}
 /* composer fixed */
 .composer-shell{
   position:fixed;
@@ -934,6 +957,43 @@ function renderReplySnippet(msg) {
   `;
 }
 
+function renderMessageContent(msg){
+
+  if(msg.type === 'image'){
+    return `
+      <div class="msg-media">
+        <img src="${msg.file}" class="msg-image">
+      </div>
+    `;
+  }
+
+  if(msg.type === 'video'){
+    return `
+      <div class="msg-media">
+        <video src="${msg.file}" controls class="msg-video"></video>
+      </div>
+    `;
+  }
+
+  if(msg.type === 'audio'){
+    return `
+      <div class="msg-media">
+        <audio src="${msg.file}" controls class="msg-audio"></audio>
+      </div>
+    `;
+  }
+
+  if(msg.type === 'file'){
+    return `
+      <div class="msg-file">
+        📎 ${escapeHtml(msg.fileName)}
+      </div>
+    `;
+  }
+
+  return `<div class="msg-text">${escapeHtml(msg.text)}</div>`;
+}
+
 function renderMessages() {
   messagesEl.innerHTML = '';
 
@@ -946,7 +1006,7 @@ function renderMessages() {
       <div class="reply-hint">↩️</div>
       <div class="msg ${msg.mine ? 'me' : 'other'}">
         ${renderReplySnippet(msg)}
-        <div class="msg-text">${escapeHtml(msg.text)}</div>
+        ${renderMessageContent(msg)}
         <div class="msg-meta">
           ${msg.edited ? '<span>(تم التعديل)</span>' : ''}
           <span>${escapeHtml(msg.time)}</span>
@@ -1342,13 +1402,37 @@ function sendMessage() {
     return;
   }
 
-  data.push({
+  const newMsg = {
     id: Date.now(),
     mine: true,
     text,
     time: new Date().toLocaleTimeString('ar', { hour: '2-digit', minute: '2-digit' }),
     replyToId: replyingToId || null
-  });
+  };
+  
+  if (selectedAttachment) {
+    const url = URL.createObjectURL(selectedAttachment);
+  
+    if (selectedAttachment.type.startsWith('image/')) {
+      newMsg.type = 'image';
+      newMsg.file = url;
+    }
+    else if (selectedAttachment.type.startsWith('video/')) {
+      newMsg.type = 'video';
+      newMsg.file = url;
+    }
+    else if (selectedAttachment.type.startsWith('audio/')) {
+      newMsg.type = 'audio';
+      newMsg.file = url;
+    }
+    else {
+      newMsg.type = 'file';
+      newMsg.file = url;
+      newMsg.fileName = selectedAttachment.name;
+    }
+  }
+  
+  data.push(newMsg);
 
   input.value = '';
   autoGrowTextarea();
