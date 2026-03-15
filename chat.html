@@ -740,7 +740,12 @@ button.send-btn svg{
       <input id="audioPicker" type="file" accept="audio/*" class="hidden" />
 
       <button class="attach-btn" id="attachBtn" type="button" aria-label="إضافة مرفق">+</button>
-      <textarea id="text" placeholder="اكتب رسالة..." rows="1"></textarea>
+      <textarea
+        id="text"
+        placeholder="اكتب رسالة..."
+        rows="1"
+        enterkeyhint="enter"
+      ></textarea>
       <button class="send-btn" id="sendBtn" type="button" aria-label="إرسال أو تسجيل صوت"></button>
     </footer>
   </div>
@@ -1981,15 +1986,6 @@ sendBtn.addEventListener('click', async () => {
 input.addEventListener('input', () => {
   autoGrowTextarea();
   updateComposerActionButton();
-});
-
-input.addEventListener('keydown', async (e) => {
-  if (e.key === 'Enter' && !e.shiftKey) {
-    e.preventDefault();
-    if (sendBtn.dataset.mode === 'send') {
-      await sendMessage();
-    }
-  }
 });
 
 input.addEventListener('focus', () => {
