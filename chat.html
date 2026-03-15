@@ -432,6 +432,11 @@ header{
   display:block;
   box-shadow:0 20px 60px rgba(0,0,0,.5);
 }
+
+.msg-media + .msg-text,
+.msg-file + .msg-text{
+  margin-top:6px;
+}
   
 .reply-close{
   background:transparent;
@@ -846,6 +851,8 @@ const menuHead = document.getElementById('menuHead');
 const menuActions = document.getElementById('menuActions');
 const menuMessagePreview = document.getElementById('menuMessagePreview');
 const attachOverlay = document.getElementById('attachOverlay');
+const mediaViewer = document.getElementById('mediaViewer');
+const mediaViewerImage = document.getElementById('mediaViewerImage');
   
 let replyingToId = null;
 let editingId = null;
@@ -1046,6 +1053,12 @@ function renderMessages() {
 
     bindInteractions(wrap, msg);
     messagesEl.appendChild(wrap);
+    const imageEl = wrap.querySelector('[data-full-image]');
+    if (imageEl) {
+      imageEl.addEventListener('click', () => {
+        openImageViewer(imageEl.dataset.fullImage);
+      });
+    }
   });
 
   messagesEl.scrollTop = messagesEl.scrollHeight;
@@ -1184,6 +1197,16 @@ function openAttachSheet() {
 
 function closeAttachSheet() {
   attachOverlay.style.display = 'none';
+}
+
+function openImageViewer(src) {
+  mediaViewerImage.src = src;
+  mediaViewer.classList.remove('hidden');
+}
+
+function closeImageViewer() {
+  mediaViewerImage.src = '';
+  mediaViewer.classList.add('hidden');
 }
 
 function formatRecordingTime(totalSeconds) {
@@ -1725,6 +1748,8 @@ document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') closeMenu();
 });
 
+mediaViewer.addEventListener('click', closeImageViewer);
+  
 window.addEventListener('resize', syncLayoutHeights);
 window.addEventListener('orientationchange', () => {
   setTimeout(syncLayoutHeights, 80);
