@@ -1748,7 +1748,11 @@ document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') closeMenu();
 });
 
-mediaViewer.addEventListener('click', closeImageViewer);
+mediaViewer.addEventListener('click', (e) => {
+  if (e.target === mediaViewer) {
+    closeImageViewer();
+  }
+});
   
 window.addEventListener('resize', syncLayoutHeights);
 window.addEventListener('orientationchange', () => {
