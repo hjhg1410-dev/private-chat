@@ -870,8 +870,19 @@ function getActionButtonIcon(mode) {
 }
 
 function updateComposerActionButton() {
+
   const hasText = input.value.trim().length > 0;
-  const mode = isRecording ? 'stop' : (hasText ? 'send' : 'mic');
+  const hasAttachment = !!selectedAttachment;
+
+  let mode;
+
+  if (isRecording) {
+    mode = 'stop';
+  } else if (hasText || hasAttachment) {
+    mode = 'send';
+  } else {
+    mode = 'mic';
+  }
 
   sendBtn.dataset.mode = mode;
   sendBtn.innerHTML = getActionButtonIcon(mode);
@@ -1278,6 +1289,7 @@ function handlePickedFile(file, kindLabel) {
 
   selectedAttachment = file;
   updateAttachmentPreview();
+  updateComposerActionButton();
 }
 
 async function copyMessage(id) {
