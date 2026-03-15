@@ -353,6 +353,13 @@ header{
   background:#000;
   border:1px solid rgba(255,255,255,.08);
 }
+
+.attachment-preview-audio{
+  width:220px;
+  max-width:100%;
+  display:block;
+}
+
 .reply-preview-box{
   display:flex;
   align-items:flex-start;
@@ -1242,8 +1249,10 @@ function updateAttachmentPreview() {
   } else if (type.startsWith('video/')) {
     selectedAttachmentUrl = URL.createObjectURL(file);
     previewMedia = `<video class="attachment-preview-video" src="${selectedAttachmentUrl}" controls playsinline preload="metadata"></video>`;
+  } else if (type.startsWith('audio/')) {
+    selectedAttachmentUrl = URL.createObjectURL(file);
+    previewMedia = `<audio class="attachment-preview-audio" src="${selectedAttachmentUrl}" controls preload="metadata"></audio>`;
   }
-
   attachmentPreview.classList.remove('hidden');
   attachmentPreview.innerHTML = `
     <div class="attachment-preview-box">
